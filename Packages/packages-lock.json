@@ -130,6 +130,7 @@
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.6",
       "depth": 2,
+<<<<<<< Updated upstream
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -137,6 +138,8 @@
     "com.unity.nuget.newtonsoft-json": {
       "version": "3.2.1",
       "depth": 1,
+=======
+>>>>>>> Stashed changes
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
