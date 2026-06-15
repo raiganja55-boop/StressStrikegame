@@ -42,6 +42,9 @@ public class DummyRockingDoll : MonoBehaviour
 
         // Start off bottom-heavy to be stable
         rb.centerOfMass = bottomHeavyCenterOfMass;
+
+        // Freeze X and Z position so it doesn't slide, but let Y be free so it can fall to the floor
+        rb.constraints = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
     }
 
     void FixedUpdate()
