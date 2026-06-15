@@ -4,6 +4,8 @@ public class animationStateController : MonoBehaviour
 {
     Animator animator;
     int isJabHash;
+    int isLeftJabHash;
+    int isLeftHookHash;
     int isHookHash;
     bool isValidSetup = false;
 
@@ -24,8 +26,10 @@ public class animationStateController : MonoBehaviour
         }
 
         isJabHash = Animator.StringToHash("isJab");
+        isLeftJabHash = Animator.StringToHash("isLeftJab");
+        isLeftHookHash = Animator.StringToHash("isLeftHook");
         isHookHash = Animator.StringToHash("isHook");
-        
+
         // This confirms everything is set up before allowing Update to run
         isValidSetup = true; 
     }
@@ -36,8 +40,12 @@ public class animationStateController : MonoBehaviour
         if (!isValidSetup) return;
 
         bool isJab = animator.GetBool(isJabHash);
+        bool isLeftJab = animator.GetBool(isLeftJabHash);
+        bool isLeftHook = animator.GetBool(isLeftHookHash);
         bool isHook = animator.GetBool(isHookHash);
         bool Jpressed = Input.GetKey("j");
+        bool Kpressed = Input.GetKey("k");
+        bool Lpressed = Input.GetKey("m");
         bool Hpressed = Input.GetKey("h");
         
         if (!isJab && Jpressed)
@@ -49,7 +57,16 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetBool(isJabHash, false); // Changed "isJab" to isJabHash for consistency
         }
-
+//////////////////////////////////////////////////////////////////
+        if (!isLeftHook && Kpressed)
+        {
+            animator.SetBool(isLeftHookHash, true);
+        }
+        if (isLeftHook && !Kpressed)
+        {
+            animator.SetBool(isLeftHookHash, false);
+        }
+///////////////////////////////////////////////////////////////////
         if (!isHook && Hpressed)
         {
             animator.SetBool(isHookHash, true);
@@ -59,5 +76,17 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetBool(isHookHash, false);
         }
+////////////////////////////////////////////////////////////////////
+        if (!isLeftJab && Lpressed)
+        {
+            animator.SetBool(isLeftJabHash, true);
+        }
+
+        if (isLeftJab && !Lpressed)
+        {
+            animator.SetBool(isLeftJabHash, false);
+        }
+/////////////////////////////////////////////////////////////////////
+
     }
 }
