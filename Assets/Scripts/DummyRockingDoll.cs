@@ -8,6 +8,9 @@ public class DummyRockingDoll : MonoBehaviour
     private Rigidbody rb;
 
     [Header("Rocking Doll Physics Settings")]
+    [Tooltip("The mass of the dummy. Higher values make it heavier and harder to launch into the air.")]
+    public float dummyMass = 100f;
+
     [Tooltip("The spring force pushing the dummy back to an upright position.")]
     public float uprightSpringForce = 150f;
     
@@ -33,6 +36,9 @@ public class DummyRockingDoll : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         
+        // Apply our heavier mass so it doesn't fly away easily
+        rb.mass = dummyMass;
+
         // Remember the original standing rotation
         initialRotation = transform.rotation;
 
