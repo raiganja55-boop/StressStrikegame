@@ -8,9 +8,6 @@ public class DummyRockingDoll : MonoBehaviour
     private Rigidbody rb;
 
     [Header("Rocking Doll Physics Settings")]
-    [Tooltip("The mass of the dummy. Higher values make it heavier and harder to launch into the air.")]
-    public float dummyMass = 100f;
-
     [Tooltip("The spring force pushing the dummy back to an upright position.")]
     public float uprightSpringForce = 150f;
     
@@ -20,25 +17,14 @@ public class DummyRockingDoll : MonoBehaviour
     [Tooltip("Lowers the center of mass to act like a real Roly-Poly toy. Negative values make it bottom-heavy.")]
     public float centerOfMassYOffset = -1.5f;
 
-    [Header("Knockdown Settings")]
-    [Tooltip("Angle in degrees before the dummy is considered 'knocked down' and stops trying to stand.")]
-    public float knockdownAngleThreshold = 60f;
-    
-    [Tooltip("Time in seconds the dummy stays flat on the floor before starting to stand back up.")]
-    public float recoveryDelay = 3.0f;
-
     private Quaternion initialRotation;
     private Vector3 originalCenterOfMass;
     private Vector3 bottomHeavyCenterOfMass;
-    private bool isKnockedDown = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         
-        // Apply our heavier mass so it doesn't fly away easily
-        rb.mass = dummyMass;
-
         // Remember the original standing rotation
         initialRotation = transform.rotation;
 
@@ -65,17 +51,7 @@ public class DummyRockingDoll : MonoBehaviour
 
         float absAngle = Mathf.Abs(angle);
 
-        // 2. Check if the dummy was tipped over far enough to be "knocked down"
-        if (!isKnockedDown && absAngle > knockdownAngleThreshold)
-        {
-            StartCoroutine(KnockdownRoutine());
-        }
-
-        // 3. If knocked down, we do NOT apply the upright spring force. Let it lie there.
-        if (isKnockedDown)
-            return;
-
-        // 4. If standing or recovering, apply spring forces to keep it upright
+        // 2. Apply spring forces to keep it upright
         float angleInRadians = angle * Mathf.Deg2Rad;
 
         // Skip if perfectly upright or if the axis is mathematically invalid
@@ -86,22 +62,6 @@ public class DummyRockingDoll : MonoBehaviour
         Vector3 restoringTorque = axis * (angleInRadians * uprightSpringForce) - (rb.angularVelocity * uprightDamping);
         
         rb.AddTorque(restoringTorque, ForceMode.Acceleration);
-    }
-
-    private IEnumerator KnockdownRoutine()
-    {
-        isKnockedDown = true;
-        
-        // Reset the center of mass to normal so it acts like a lifeless body on the floor
-        // (If we leave it bottom-heavy, it might naturally try to stand up on its own)
-        rb.centerOfMass = originalCenterOfMass;
-
-        // Wait for the recovery delay while lying on the ground
-        yield return new WaitForSeconds(recoveryDelay);
-
-        // After the delay, restore bottom-heavy physics and let FixedUpdate spring it back up
-        rb.centerOfMass = bottomHeavyCenterOfMass;
-        isKnockedDown = false;
     }
 
     /// <summary>
