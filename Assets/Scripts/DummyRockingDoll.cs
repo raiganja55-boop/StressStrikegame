@@ -8,8 +8,11 @@ public class DummyRockingDoll : MonoBehaviour
     private Rigidbody rb;
 
     [Header("Rocking Doll Physics Settings")]
+    [Tooltip("The mass of the dummy. Higher values make it heavier and harder to launch into the air.")]
+    public float dummyMass = 10f;
+
     [Tooltip("The spring force pushing the dummy back to an upright position.")]
-    public float uprightSpringForce = 150f;
+    public float uprightSpringForce = 1500f;
     
     [Tooltip("Damping to prevent the dummy from wobbling forever. Higher values make it settle faster.")]
     public float uprightDamping = 10f;
@@ -17,86 +20,96 @@ public class DummyRockingDoll : MonoBehaviour
     [Tooltip("Lowers the center of mass to act like a real Roly-Poly toy. Negative values make it bottom-heavy.")]
     public float centerOfMassYOffset = -1.5f;
 
-    [Header("Knockdown Settings")]
-    [Tooltip("Angle in degrees before the dummy is considered 'knocked down' and stops trying to stand.")]
-    public float knockdownAngleThreshold = 60f;
-    
-    [Tooltip("Time in seconds the dummy stays flat on the floor before starting to stand back up.")]
-    public float recoveryDelay = 3.0f;
-
     private Quaternion initialRotation;
     private Vector3 originalCenterOfMass;
     private Vector3 bottomHeavyCenterOfMass;
-    private bool isKnockedDown = false;
+
+    [Header("Debug Settings")]
+    public bool debugMode = true;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         
+        // Apply our heavier mass so it doesn't fly away easily
+        rb.mass = dummyMass;
+
         // Remember the original standing rotation
         initialRotation = transform.rotation;
 
         // Save center of mass states
         originalCenterOfMass = rb.centerOfMass;
-        bottomHeavyCenterOfMass = originalCenterOfMass + new Vector3(0, centerOfMassYOffset, 0);
+        
+        // Find the exact bottom of the collider to use as the pivot point
+        float bottomY = centerOfMassYOffset;
+        BoxCollider box = GetComponentInChildren<BoxCollider>();
+        CapsuleCollider cap = GetComponentInChildren<CapsuleCollider>();
+        if (box != null) bottomY = box.center.y - (box.size.y / 2f);
+        else if (cap != null) bottomY = cap.center.y - (cap.height / 2f);
+        else {
+            Collider col = GetComponentInChildren<Collider>();
+            if (col != null && transform.lossyScale.y > 0.001f) 
+                bottomY = (col.bounds.min.y - transform.position.y) / transform.lossyScale.y;
+        }
 
-        // Start off bottom-heavy to be stable
-        rb.centerOfMass = bottomHeavyCenterOfMass;
+        // Instead of freezing positions and fighting physics manually,
+        // we create an invisible anchor and use a ConfigurableJoint.
+        // This is the native, completely unbreakable way to make a punching bag in Unity.
+        
+        GameObject anchorGo = new GameObject(gameObject.name + "_Anchor");
+        anchorGo.transform.position = transform.position;
+        anchorGo.transform.rotation = transform.rotation;
+        
+        Rigidbody anchorRb = anchorGo.AddComponent<Rigidbody>();
+        anchorRb.isKinematic = true;
 
-        // Freeze X and Z position so it doesn't slide, but let Y be free so it can fall to the floor
-        rb.constraints = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
+        ConfigurableJoint joint = gameObject.AddComponent<ConfigurableJoint>();
+        joint.connectedBody = anchorRb;
+        joint.autoConfigureConnectedAnchor = false;
+        
+        // Pivot around the bottom center
+        // Pivot around the bottom center
+        joint.anchor = new Vector3(0, bottomY, 0);
+
+// FIX: Just use the local offset! Do not add the world position.
+        joint.connectedAnchor = new Vector3(0, bottomY, 0);
+
+        // Lock all linear movement
+        joint.xMotion = ConfigurableJointMotion.Locked;
+        joint.yMotion = ConfigurableJointMotion.Locked;
+        joint.zMotion = ConfigurableJointMotion.Locked;
+
+        // Lock twisting around the Y axis
+        joint.angularYMotion = ConfigurableJointMotion.Locked;
+
+        // Limit the tilt angle so it physically CANNOT touch the floor
+        joint.angularXMotion = ConfigurableJointMotion.Limited;
+        joint.angularZMotion = ConfigurableJointMotion.Limited;
+        
+        SoftJointLimit limit = new SoftJointLimit();
+        limit.limit = 50f; // Maximum tilt is 50 degrees
+        
+        joint.lowAngularXLimit = new SoftJointLimit() { limit = -50f };
+        joint.highAngularXLimit = limit;
+        joint.angularZLimit = limit;
+
+        // Create a powerful spring to constantly push it upright
+        JointDrive drive = new JointDrive();
+        drive.positionSpring = uprightSpringForce * 20f; // Scale up for joint
+        drive.positionDamper = uprightDamping * 5f;
+        drive.maximumForce = float.MaxValue;
+
+        joint.angularXDrive = drive;
+        joint.angularYZDrive = drive;
     }
 
     void FixedUpdate()
     {
-        // 1. Calculate the rotation needed to return to the initial rotation
-        Quaternion deltaRot = initialRotation * Quaternion.Inverse(rb.rotation);
-        deltaRot.ToAngleAxis(out float angle, out Vector3 axis);
-
-        // Adjust angle to find the shortest path back
-        if (angle > 180f)
-            angle -= 360f;
-
-        float absAngle = Mathf.Abs(angle);
-
-        // 2. Check if the dummy was tipped over far enough to be "knocked down"
-        if (!isKnockedDown && absAngle > knockdownAngleThreshold)
-        {
-            StartCoroutine(KnockdownRoutine());
-        }
-
-        // 3. If knocked down, we do NOT apply the upright spring force. Let it lie there.
-        if (isKnockedDown)
-            return;
-
-        // 4. If standing or recovering, apply spring forces to keep it upright
-        float angleInRadians = angle * Mathf.Deg2Rad;
-
-        // Skip if perfectly upright or if the axis is mathematically invalid
-        if (Mathf.Abs(angleInRadians) < 0.001f || float.IsNaN(axis.x) || float.IsInfinity(axis.x))
-            return;
-
-        // Apply a spring formula: Torque = (SpringForce * Error) - (Damping * AngularVelocity)
-        Vector3 restoringTorque = axis * (angleInRadians * uprightSpringForce) - (rb.angularVelocity * uprightDamping);
-        
-        rb.AddTorque(restoringTorque, ForceMode.Acceleration);
+        // The ConfigurableJoint now natively handles all spring and upright logic.
+        // We no longer need to manually calculate and AddTorque in FixedUpdate.
     }
 
-    private IEnumerator KnockdownRoutine()
-    {
-        isKnockedDown = true;
-        
-        // Reset the center of mass to normal so it acts like a lifeless body on the floor
-        // (If we leave it bottom-heavy, it might naturally try to stand up on its own)
-        rb.centerOfMass = originalCenterOfMass;
 
-        // Wait for the recovery delay while lying on the ground
-        yield return new WaitForSeconds(recoveryDelay);
-
-        // After the delay, restore bottom-heavy physics and let FixedUpdate spring it back up
-        rb.centerOfMass = bottomHeavyCenterOfMass;
-        isKnockedDown = false;
-    }
 
     /// <summary>
     /// Call this method from your player punch/attack script when the dummy is hit.
