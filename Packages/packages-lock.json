@@ -21,6 +21,13 @@
       },
       "hash": "dd99ee4699bfde56dfb6155bf36b0d3a5135bf8c"
     },
+    "com.community.antigravity-unity": {
+      "version": "https://github.com/usmanbutt-dev/antigravity-unity.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "9d13ba48c1e2f2d3628e4728b07b65ace21c975a"
+    },
     "com.gamelovers.mcp-unity": {
       "version": "https://github.com/CoderGamester/mcp-unity.git",
       "depth": 0,
