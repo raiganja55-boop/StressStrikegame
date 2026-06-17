@@ -1,10 +1,23 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using TMPro;
 using DG.Tweening;
 
 public class CombatHudController : MonoBehaviour
 {
+    [Header("UI Text & Portraits")]
+    [SerializeField] private TextMeshProUGUI _playerNameText;
+    [SerializeField] private TextMeshProUGUI _opponentNameText;
+    [SerializeField] private TextMeshProUGUI _roundText;
+    [SerializeField] private Image _playerPortraitImage;
+    [SerializeField] private Image _opponentPortraitImage;
+
+    [Header("Opponent Icons (Assign in Inspector)")]
+    [SerializeField] private Sprite _damienIcon;
+    [SerializeField] private Sprite _brockIcon;
+    [SerializeField] private Sprite _silasIcon;
+
     [Header("Player Health")]
     [SerializeField] private Image _playerHealthFillImage;
     [SerializeField] private Image _playerHealthTrailingFillImage;
@@ -39,6 +52,9 @@ public class CombatHudController : MonoBehaviour
     private float _opponentCurrentHealth;
     private float _opponentCurrentStamina;
 
+    private int _currentStage = 1;
+    private bool _isCleared = false;
+
     // Track active tweens so we can kill them before starting new ones
     private Sequence _playerHealthSequence;
     private Sequence _playerStaminaSequence;
@@ -60,6 +76,9 @@ public class CombatHudController : MonoBehaviour
         SetFillImmediate(_opponentHealthTrailingFillImage, 1f);
         SetFillImmediate(_opponentStaminaFillImage, 1f);
         SetFillImmediate(_opponentStaminaTrailingFillImage, 1f);
+
+        UpdateRoundText();
+        UpdateOpponentProfile();
     }
 
     private void Update()
@@ -75,7 +94,7 @@ public class CombatHudController : MonoBehaviour
             DrainPlayerStamina(15f);
         }
 
-        if (Keyboard.current.enterKey.wasPressedThisFrame)
+        if (Keyboard.current.backspaceKey.wasPressedThisFrame)
         {
             DrainOpponentHealth(10f);
         }
@@ -84,11 +103,102 @@ public class CombatHudController : MonoBehaviour
         {
             DrainOpponentStamina(15f);
         }
+
+        if (Keyboard.current.upArrowKey.wasPressedThisFrame)
+        {
+            AdvanceRound();
+        }
     }
 
     // ─────────────────────────────────────────────
     // Public API — Call these from gameplay scripts
     // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Advance the progression: Stage 1 -> Clear -> Stage 2 -> Clear -> Final Stage -> All Clear
+    /// </summary>
+    public void AdvanceRound()
+    {
+        if (!_isCleared)
+        {
+            _isCleared = true; // Beat the current stage
+        }
+        else
+        {
+            if (_currentStage < 3)
+            {
+                _isCleared = false; // Move to next stage
+                _currentStage++;
+            }
+        }
+        
+        UpdateRoundText();
+        UpdateOpponentProfile();
+        
+        // Optional: Animate the text when it changes
+        if (_roundText != null)
+        {
+            _roundText.transform.DOPunchScale(Vector3.one * 0.2f, 0.3f, 10, 1f);
+        }
+    }
+
+    private void UpdateRoundText()
+    {
+        if (_roundText == null) return;
+
+        if (_isCleared)
+        {
+            if (_currentStage >= 3)
+            {
+                _roundText.text = "ALL CLEAR!";
+                _roundText.fontSize = 60; // Make it fit better
+            }
+            else
+            {
+                _roundText.text = "CLEAR!";
+                _roundText.fontSize = 72; 
+            }
+        }
+        else
+        {
+            switch (_currentStage)
+            {
+                case 1:
+                    _roundText.text = "STAGE 1";
+                    _roundText.fontSize = 72;
+                    break;
+                case 2:
+                    _roundText.text = "STAGE 2";
+                    _roundText.fontSize = 72;
+                    break;
+                case 3:
+                    _roundText.text = "FINAL\nSTAGE";
+                    _roundText.fontSize = 58; // Smaller for 2 lines
+                    break;
+            }
+        }
+    }
+
+    private void UpdateOpponentProfile()
+    {
+        if (_opponentNameText == null) return;
+        
+        switch (_currentStage)
+        {
+            case 1:
+                _opponentNameText.text = "Damien";
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _damienIcon;
+                break;
+            case 2:
+                _opponentNameText.text = "Brock";
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _brockIcon;
+                break;
+            case 3:
+                _opponentNameText.text = "Silas";
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _silasIcon;
+                break;
+        }
+    }
 
     /// <summary>
     /// Drain the player's health bar by the given amount.
