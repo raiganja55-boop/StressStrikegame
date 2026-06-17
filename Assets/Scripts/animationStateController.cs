@@ -4,31 +4,69 @@ public class animationStateController : MonoBehaviour
 {
     Animator animator;
     int isJabHash;
+    int isLeftJabHash;
+    int isLeftHookHash;
     int isHookHash;
+    bool isValidSetup = false;
 
     void Start()
     {
         animator = GetComponent<Animator>();
+        
+        if (animator == null)
+        {
+            Debug.LogError($"[animationStateController] No Animator component found on GameObject: '{gameObject.name}'", gameObject);
+            return;
+        }
+
+        if (animator.runtimeAnimatorController == null)
+        {
+            Debug.LogError($"[animationStateController] The Animator on '{gameObject.name}' is missing an Animator Controller! Please assign one in the Inspector.", gameObject);
+            return;
+        }
+
         isJabHash = Animator.StringToHash("isJab");
+        isLeftJabHash = Animator.StringToHash("isLeftJab");
+        isLeftHookHash = Animator.StringToHash("isLeftHook");
         isHookHash = Animator.StringToHash("isHook");
+
+        // This confirms everything is set up before allowing Update to run
+        isValidSetup = true; 
     }
 
     void Update()
     {
+        // Don't run animation logic if the animator isn't set up properly
+        if (!isValidSetup) return;
+
         bool isJab = animator.GetBool(isJabHash);
+        bool isLeftJab = animator.GetBool(isLeftJabHash);
+        bool isLeftHook = animator.GetBool(isLeftHookHash);
         bool isHook = animator.GetBool(isHookHash);
         bool Jpressed = Input.GetKey("j");
+        bool Kpressed = Input.GetKey("k");
+        bool Lpressed = Input.GetKey("m");
         bool Hpressed = Input.GetKey("h");
+        
         if (!isJab && Jpressed)
         {
-            animator.SetBool("isJab", true);
+            animator.SetBool(isJabHash, true); // Changed "isJab" to isJabHash for consistency
         }
 
         if (isJab && !Jpressed)
         {
-            animator.SetBool("isJab", false);
+            animator.SetBool(isJabHash, false); // Changed "isJab" to isJabHash for consistency
         }
-
+//////////////////////////////////////////////////////////////////
+        if (!isLeftHook && Kpressed)
+        {
+            animator.SetBool(isLeftHookHash, true);
+        }
+        if (isLeftHook && !Kpressed)
+        {
+            animator.SetBool(isLeftHookHash, false);
+        }
+///////////////////////////////////////////////////////////////////
         if (!isHook && Hpressed)
         {
             animator.SetBool(isHookHash, true);
@@ -38,5 +76,17 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetBool(isHookHash, false);
         }
+////////////////////////////////////////////////////////////////////
+        if (!isLeftJab && Lpressed)
+        {
+            animator.SetBool(isLeftJabHash, true);
+        }
+
+        if (isLeftJab && !Lpressed)
+        {
+            animator.SetBool(isLeftJabHash, false);
+        }
+/////////////////////////////////////////////////////////////////////
+
     }
 }
