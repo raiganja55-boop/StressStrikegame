@@ -164,16 +164,16 @@ public class CombatHudController : MonoBehaviour
             switch (_currentStage)
             {
                 case 1:
-                    _roundText.text = "STAGE 1";
+                    _roundText.text = "--VS--";
                     _roundText.fontSize = 72;
                     break;
                 case 2:
-                    _roundText.text = "STAGE 2";
+                    _roundText.text = "--VS--";
                     _roundText.fontSize = 72;
                     break;
                 case 3:
-                    _roundText.text = "FINAL\nSTAGE";
-                    _roundText.fontSize = 58; // Smaller for 2 lines
+                    _roundText.text = "--VS--";
+                    _roundText.fontSize = 72;
                     break;
             }
         }

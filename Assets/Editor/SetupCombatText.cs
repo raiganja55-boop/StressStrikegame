@@ -24,7 +24,7 @@ public class SetupCombatText : EditorWindow
         if (roundsParent == null) roundsParent = hudController.transform;
 
         TextMeshProUGUI roundText = CreateTextElement("Round Text", roundsParent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(56.17584f, -49.4371f), new Vector2(400, 100));
-        roundText.text = "STAGE 1";
+        roundText.text = "--VS--";
         roundText.fontSize = 72;
         roundText.fontStyle = FontStyles.Bold | FontStyles.Italic;
         roundText.alignment = TextAlignmentOptions.Center;
