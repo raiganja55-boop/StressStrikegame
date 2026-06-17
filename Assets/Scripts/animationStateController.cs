@@ -8,6 +8,7 @@ public class animationStateController : MonoBehaviour
     int isLeftHookHash;
     int isHookHash;
     int isBlockHash;
+    int isLeftBlockHash;
     bool isValidSetup = false;
 
     void Start()
@@ -31,6 +32,7 @@ public class animationStateController : MonoBehaviour
         isLeftHookHash = Animator.StringToHash("isLeftHook");
         isHookHash = Animator.StringToHash("isHook");
         isBlockHash = Animator.StringToHash("isBlock");
+        isLeftBlockHash = Animator.StringToHash("isLeftBlock");
         // This confirms everything is set up before allowing Update to run
         isValidSetup = true; 
     }
@@ -45,11 +47,13 @@ public class animationStateController : MonoBehaviour
         bool isLeftHook = animator.GetBool(isLeftHookHash);
         bool isHook = animator.GetBool(isHookHash);
         bool isBlock = animator.GetBool(isBlockHash);
+        bool isLeftBlock = animator.GetBool(isLeftBlockHash);
         bool Jpressed = Input.GetKey("j");
         bool Kpressed = Input.GetKey("k");
         bool Lpressed = Input.GetKey("m");
         bool Hpressed = Input.GetKey("h");
         bool Bpressed = Input.GetKey("b");
+        bool Npressed = Input.GetKey("n");
         
         if (!isJab && Jpressed)
         {
@@ -98,6 +102,16 @@ public class animationStateController : MonoBehaviour
         if (isBlock && !Bpressed)
         {
             animator.SetBool(isBlockHash, false);
+        }
+
+        if (!isLeftBlock && Npressed)
+        {
+            animator.SetBool(isLeftBlockHash, true);
+        }
+
+        if (isLeftBlock && !Npressed)
+        {
+            animator.SetBool(isLeftBlockHash, false);
         }
 
     }
