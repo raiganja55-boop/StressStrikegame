@@ -11,14 +11,15 @@ public class BotAnimationControll : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (animator == null) return;
+
         if (Input.GetKey("i"))
         {
             animator.SetBool("isBotRightJab", true);
         }
-        if (!Input.GetKey("i"))
+        else
         {
             animator.SetBool("isBotRightJab", false);
         }
-        
     }
 }
