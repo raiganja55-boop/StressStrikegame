@@ -15,21 +15,39 @@ public class MainMenuSetupEditor : EditorWindow
             return;
         }
 
-        // Add MainMenuManager if not present
         MainMenuManager manager = mainMenu.GetComponent<MainMenuManager>();
-        if (manager == null)
+        if (manager == null) manager = mainMenu.AddComponent<MainMenuManager>();
+
+        // Find the original play button
+        Transform playTransform = mainMenu.transform.Find("play");
+        if (playTransform != null)
         {
-            manager = mainMenu.AddComponent<MainMenuManager>();
+            manager.playButton = playTransform.GetComponent<RectTransform>();
+
+            // Create Arena and Training as children of Play
+            manager.arenaButton = CreateSubButton(playTransform, "arena", "ARENA", manager, "LoadArena");
+            manager.trainingButton = CreateSubButton(playTransform, "training", "TRAINING", manager, "LoadTraining");
+            
+            // Set Play button to TogglePlayOptions
+            ConvertObjectToButton(mainMenu.transform, "play", manager, "TogglePlayOptions");
+        }
+        else
+        {
+            Debug.LogWarning("play button not found!");
         }
 
-        // Convert the 5 objects into interactive buttons
-        ConvertObjectToButton(mainMenu.transform, "play", manager, "PlayGame");
+        // Convert the others
         ConvertObjectToButton(mainMenu.transform, "options", manager, "OpenOptions");
         ConvertObjectToButton(mainMenu.transform, "quit", manager, "QuitGame");
         ConvertObjectToButton(mainMenu.transform, "store", manager, "OpenStore");
         ConvertObjectToButton(mainMenu.transform, "login", manager, "OpenLogin");
 
-        // Ensure there is an EventSystem in the scene
+        // Create Panels
+        manager.optionsPanel = CreatePanel(mainMenu.transform, "OptionsPanel", "OPTIONS MENU");
+        manager.storePanel = CreatePanel(mainMenu.transform, "StorePanel", "STORE MENU");
+        manager.loginPanel = CreatePanel(mainMenu.transform, "LoginPanel", "LOGIN MENU");
+
+        // Ensure EventSystem
         if (FindObjectOfType<EventSystem>() == null)
         {
             GameObject eventSystem = new GameObject("EventSystem");
@@ -37,54 +55,129 @@ public class MainMenuSetupEditor : EditorWindow
             eventSystem.AddComponent<StandaloneInputModule>();
         }
 
-        Debug.Log("Main Menu UI setup successfully! Play, Options, Quit, Store, and Login are now interactive buttons.");
+        // Apply changes to the object so they are saved
+        EditorUtility.SetDirty(manager);
+
+        Debug.Log("UI Transitions and Panels setup successfully!");
+    }
+
+    private static RectTransform CreateSubButton(Transform parent, string name, string label, MainMenuManager manager, string methodName)
+    {
+        Transform existing = parent.Find(name);
+        GameObject btnObj;
+        
+        if (existing == null)
+        {
+            btnObj = DefaultControls.CreateButton(new DefaultControls.Resources());
+            btnObj.name = name;
+            btnObj.transform.SetParent(parent, false);
+            btnObj.GetComponentInChildren<Text>().text = label;
+        }
+        else
+        {
+            btnObj = existing.gameObject;
+        }
+
+        RectTransform rect = btnObj.GetComponent<RectTransform>();
+        rect.anchoredPosition = Vector2.zero; // Start at center
+        rect.sizeDelta = new Vector2(120, 50); // Smaller than main buttons
+
+        Button btn = btnObj.GetComponent<Button>();
+        UnityEditor.Events.UnityEventTools.RemovePersistentListener(btn.onClick, 
+            (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), manager, methodName));
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, 
+            (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), manager, methodName));
+
+        return rect;
+    }
+
+    private static CanvasGroup CreatePanel(Transform parent, string name, string title)
+    {
+        Transform existing = parent.Find(name);
+        if (existing != null) return existing.GetComponent<CanvasGroup>();
+
+        GameObject panel = new GameObject(name);
+        panel.transform.SetParent(parent, false);
+        
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.1f, 0.1f);
+        rect.anchorMax = new Vector2(0.9f, 0.9f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.1f, 0.1f, 0.1f, 0.9f); // Dark background
+
+        CanvasGroup cg = panel.AddComponent<CanvasGroup>();
+
+        // Add Title Text
+        GameObject textObj = new GameObject("Title");
+        textObj.transform.SetParent(panel.transform, false);
+        Text text = textObj.AddComponent<Text>();
+        text.text = title;
+        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.fontSize = 40;
+        text.alignment = TextAnchor.UpperCenter;
+        text.color = Color.white;
+        
+        RectTransform textRect = textObj.GetComponent<RectTransform>();
+        textRect.anchorMin = new Vector2(0, 0.8f);
+        textRect.anchorMax = new Vector2(1, 1);
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        // Add Close Button
+        GameObject closeBtn = DefaultControls.CreateButton(new DefaultControls.Resources());
+        closeBtn.name = "CloseButton";
+        closeBtn.transform.SetParent(panel.transform, false);
+        closeBtn.GetComponentInChildren<Text>().text = "X";
+        
+        RectTransform closeRect = closeBtn.GetComponent<RectTransform>();
+        closeRect.anchorMin = new Vector2(1, 1);
+        closeRect.anchorMax = new Vector2(1, 1);
+        closeRect.anchoredPosition = new Vector2(-40, -40);
+        closeRect.sizeDelta = new Vector2(50, 50);
+
+        MainMenuManager manager = parent.GetComponent<MainMenuManager>();
+        Button btn = closeBtn.GetComponent<Button>();
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, 
+            (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), manager, "CloseAllPanels"));
+
+        panel.SetActive(false);
+        return cg;
     }
 
     private static void ConvertObjectToButton(Transform parent, string childName, MainMenuManager manager, string methodName)
     {
         Transform childTransform = parent.Find(childName);
-        if (childTransform == null)
-        {
-            Debug.LogWarning("Could not find child named '" + childName + "'.");
-            return;
-        }
+        if (childTransform == null) return;
 
         GameObject childObj = childTransform.gameObject;
-
-        // Ensure it has an Image component to catch clicks and show color tints
         Image img = childObj.GetComponent<Image>();
         if (img == null)
         {
             img = childObj.AddComponent<Image>();
-            img.color = new Color(1f, 1f, 1f, 0f); // transparent if it's just a container
+            img.color = new Color(1f, 1f, 1f, 0f);
         }
 
-        // Add Button component
         Button btn = childObj.GetComponent<Button>();
-        if (btn == null)
-        {
-            btn = childObj.AddComponent<Button>();
-        }
+        if (btn == null) btn = childObj.AddComponent<Button>();
 
-        // Set up nice interactive color tinting
         btn.transition = Selectable.Transition.ColorTint;
         ColorBlock colors = btn.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f); // Slightly darker on hover
-        colors.pressedColor = new Color(0.75f, 0.75f, 0.75f, 1f); // Darker on press to feel interactive
+        colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+        colors.pressedColor = new Color(0.75f, 0.75f, 0.75f, 1f);
         colors.selectedColor = Color.white;
         colors.colorMultiplier = 1f;
         colors.fadeDuration = 0.1f;
         btn.colors = colors;
 
-        // Setup the UnityEvent securely
         UnityEditor.Events.UnityEventTools.RemovePersistentListener(btn.onClick, 
             (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), manager, methodName));
-
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, 
             (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), manager, methodName));
         
-        // Ensure Raycast Target is on so it can be clicked
         img.raycastTarget = true;
     }
 }
