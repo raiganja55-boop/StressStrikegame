@@ -27,6 +27,11 @@ public class DummyRockingDoll : MonoBehaviour
     [Header("Debug Settings")]
     public bool debugMode = true;
 
+    [Header("Independent Input Settings")]
+    public bool reactToInputDirectly = true;
+    public float punchForce = 100f;
+    public float reactionDelay = 0.2f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -93,10 +98,10 @@ public class DummyRockingDoll : MonoBehaviour
         joint.highAngularXLimit = limit;
         joint.angularZLimit = limit;
 
-        // Create a powerful spring to constantly push it upright
+        // Configure spring for a natural, weighty sway instead of a rigid snap
         JointDrive drive = new JointDrive();
-        drive.positionSpring = uprightSpringForce * 20f; // Scale up for joint
-        drive.positionDamper = uprightDamping * 5f;
+        drive.positionSpring = uprightSpringForce * 0.5f; // Massively scaled down so it rocks naturally
+        drive.positionDamper = uprightDamping * 1.5f; // Slightly increased damping to settle smoothly
         drive.maximumForce = float.MaxValue;
 
         joint.angularXDrive = drive;
@@ -107,6 +112,49 @@ public class DummyRockingDoll : MonoBehaviour
     {
         // The ConfigurableJoint now natively handles all spring and upright logic.
         // We no longer need to manually calculate and AddTorque in FixedUpdate.
+    }
+
+    void Update()
+    {
+        if (!reactToInputDirectly) return;
+
+        // Determine "forward" direction relative to the camera to push the dummy away from the view
+        Vector3 pushDirection = Camera.main != null ? Camera.main.transform.forward : -transform.forward;
+        pushDirection.y = 0;
+        pushDirection.Normalize();
+        
+        Vector3 rightDirection = Camera.main != null ? Camera.main.transform.right : -transform.right;
+        rightDirection.y = 0;
+        rightDirection.Normalize();
+
+        if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.M)) // Jab / Left Jab
+        {
+            StartCoroutine(ApplyDelayedPunch(pushDirection, reactionDelay));
+        }
+        else if (Input.GetKeyDown(KeyCode.K)) // Left Hook
+        {
+            // Left hook hits from the left, pushes dummy right and back
+            Vector3 hookDir = (pushDirection + rightDirection * 0.5f).normalized;
+            StartCoroutine(ApplyDelayedPunch(hookDir, reactionDelay));
+        }
+        else if (Input.GetKeyDown(KeyCode.H)) // Right Hook
+        {
+            // Right hook hits from the right, pushes dummy left and back
+            Vector3 hookDir = (pushDirection - rightDirection * 0.5f).normalized;
+            StartCoroutine(ApplyDelayedPunch(hookDir, reactionDelay));
+        }
+        else if (Input.GetKeyDown(KeyCode.P)) // Special
+        {
+            StartCoroutine(ApplyDelayedPunch(pushDirection, reactionDelay));
+        }
+    }
+
+    IEnumerator ApplyDelayedPunch(Vector3 direction, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        // Apply force slightly upwards for a better visual impact
+        Vector3 forceDir = (direction + Vector3.up * 0.2f).normalized;
+        TakePunch(forceDir * punchForce, transform.position + Vector3.up * 1.5f);
     }
 
 
