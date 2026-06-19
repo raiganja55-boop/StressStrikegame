@@ -9,8 +9,7 @@ public class animationStateController : MonoBehaviour
     int isHookHash;
     int isBlockHash;
     int isLeftBlockHash;
-    int isSpecialHash;
-    int isLeftSpecialHash;
+
 
     bool isValidSetup = false;
 
@@ -36,8 +35,7 @@ public class animationStateController : MonoBehaviour
         isHookHash = Animator.StringToHash("isHook");
         isBlockHash = Animator.StringToHash("isBlock");
         isLeftBlockHash = Animator.StringToHash("isLeftBlock");
-        isSpecialHash = Animator.StringToHash("isSpecial");
-        isLeftSpecialHash = Animator.StringToHash("isLeftSpecial");
+        
         // This confirms everything is set up before allowing Update to run
         isValidSetup = true; 
     }
@@ -53,15 +51,14 @@ public class animationStateController : MonoBehaviour
         bool isHook = animator.GetBool(isHookHash);
         bool isBlock = animator.GetBool(isBlockHash);
         bool isLeftBlock = animator.GetBool(isLeftBlockHash);
-        bool isSpecial = animator.GetBool(isSpecialHash);
-        bool isLeftSpecial = animator.GetBool(isLeftSpecialHash);
+        
         bool Jpressed = Input.GetKey(KeyCode.J);
         bool Kpressed = Input.GetKey(KeyCode.K);
         bool Lpressed = Input.GetKey(KeyCode.M);
         bool Hpressed = Input.GetKey(KeyCode.H);
         bool Bpressed = Input.GetKey(KeyCode.B);
         bool Npressed = Input.GetKey(KeyCode.N);
-        bool Ppressed = Input.GetKey(KeyCode.P);
+        
 
         if (!isJab && Jpressed)
         {
@@ -122,23 +119,12 @@ public class animationStateController : MonoBehaviour
             animator.SetBool(isLeftBlockHash, false);
         }
 ////////////////////////////////////////////////////////////////
-        if (!isSpecial && Ppressed)
+        
+        ////////////////////////////////////////////////////
+        if (Input.GetKeyDown(KeyCode.P))
         {
-            animator.SetBool(isSpecialHash, true);
-        }
-
-        if (isSpecial && !Ppressed)
-        {
-            animator.SetBool(isSpecialHash, false);
-        }
-        if (!isLeftSpecial && Ppressed)
-        {
-            animator.SetBool(isLeftSpecialHash, true);
-        }
-
-        if (isLeftSpecial && !Ppressed)
-        {
-            animator.SetBool(isLeftSpecialHash, false);
+            animator.SetTrigger("isSpecial");
+            animator.SetTrigger("isLeftSpecial");
         }
     }
 }
