@@ -237,6 +237,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fe8076ba07c5a14eb035668f6f65bd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playButton: {fileID: 0}
+  arenaButton: {fileID: 0}
+  trainingButton: {fileID: 0}
+  optionsPanel: {fileID: 0}
+  storePanel: {fileID: 0}
+  loginPanel: {fileID: 0}
 --- !u!114 &7324894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -382,7 +388,7 @@ Transform:
   m_GameObject: {fileID: 9376683}
   serializedVersion: 2
   m_LocalRotation: {x: 0.021347253, y: -0.9970316, z: -0.036481686, w: 0.06435297}
-  m_LocalPosition: {x: 3.93, y: 5.64, z: 2.68}
+  m_LocalPosition: {x: 3.3, y: 5.67, z: 1.83}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -907,7 +913,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 207274758}
   m_CullTransparentMesh: 1
---- !u!43 &213481089
+--- !u!43 &207471888
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
