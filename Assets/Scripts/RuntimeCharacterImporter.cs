@@ -6,6 +6,17 @@ public class RuntimeCharacterImporter : MonoBehaviour
     [SerializeField] private Renderer faceQuadRenderer; 
     [SerializeField] private UnityEngine.Rendering.Universal.DecalProjector faceDecalProjector;
 
+    // Material adjustment properties
+    private float currentZoom = 1f;
+    private float currentOffsetX = 0f;
+    private float currentOffsetY = 0f;
+
+    private Vector3 initialDecalLocalPos;
+    private Vector3 initialDecalSize;
+    private Vector3 initialQuadLocalPos;
+    private Vector3 initialQuadLocalScale;
+    private bool baseStateStored = false;
+
     public void ImportImageToDummy(string filePath)
     {
         Debug.Log("ImportImageToDummy called with path: " + filePath);
@@ -108,6 +119,90 @@ public class RuntimeCharacterImporter : MonoBehaviour
         else
         {
             Debug.LogError("Failed to load image data into texture.");
+        }
+
+        // Apply any existing zoom/offset right after importing a new image
+        ApplyTransformToFaceObject();
+    }
+
+    public void SetFaceZoom(float zoom)
+    {
+        currentZoom = Mathf.Max(0.1f, zoom); // Prevent division by zero or negative zoom
+        ApplyTransformToFaceObject();
+    }
+
+    public void SetFaceOffsetX(float offsetX)
+    {
+        currentOffsetX = offsetX;
+        ApplyTransformToFaceObject();
+    }
+
+    public void SetFaceOffsetY(float offsetY)
+    {
+        currentOffsetY = offsetY;
+        ApplyTransformToFaceObject();
+    }
+
+    private void StoreBaseState()
+    {
+        if (baseStateStored) return;
+
+        if (faceDecalProjector != null)
+        {
+            initialDecalLocalPos = faceDecalProjector.transform.localPosition;
+            initialDecalSize = faceDecalProjector.size;
+        }
+
+        if (faceQuadRenderer != null)
+        {
+            initialQuadLocalPos = faceQuadRenderer.transform.localPosition;
+            initialQuadLocalScale = faceQuadRenderer.transform.localScale;
+        }
+
+        baseStateStored = true;
+    }
+
+    private void ApplyTransformToFaceObject()
+    {
+        StoreBaseState();
+
+        if (faceDecalProjector != null)
+        {
+            // Zoom changes the physical size of the projection box
+            Vector3 newSize = initialDecalSize;
+            newSize.x *= currentZoom;
+            newSize.y *= currentZoom;
+            faceDecalProjector.size = newSize;
+
+            // Reset local position first
+            faceDecalProjector.transform.localPosition = initialDecalLocalPos;
+            
+            // Calculate world offset based on the projector's right and up vectors
+            // Negative to make slider movement intuitive (moving slider right moves image right)
+            Vector3 worldOffset = faceDecalProjector.transform.right * (-currentOffsetX) + 
+                                  faceDecalProjector.transform.up * (-currentOffsetY);
+                                  
+            // Apply world offset
+            faceDecalProjector.transform.position += worldOffset;
+        }
+
+        if (faceQuadRenderer != null)
+        {
+            // Zoom changes the quad scale
+            Vector3 newScale = initialQuadLocalScale;
+            newScale.x *= currentZoom;
+            newScale.y *= currentZoom;
+            faceQuadRenderer.transform.localScale = newScale;
+
+            // Reset local position first
+            faceQuadRenderer.transform.localPosition = initialQuadLocalPos;
+
+            // Calculate world offset
+            Vector3 worldOffset = faceQuadRenderer.transform.right * (-currentOffsetX) + 
+                                  faceQuadRenderer.transform.up * (-currentOffsetY);
+                                  
+            // Apply world offset
+            faceQuadRenderer.transform.position += worldOffset;
         }
     }
 

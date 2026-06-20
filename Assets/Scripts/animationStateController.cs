@@ -9,6 +9,9 @@ public class animationStateController : MonoBehaviour
     int isHookHash;
     int isBlockHash;
     int isLeftBlockHash;
+
+    private CombatHudController combatHud;
+
     bool isValidSetup = false;
 
     void Start()
@@ -33,7 +36,9 @@ public class animationStateController : MonoBehaviour
         isHookHash = Animator.StringToHash("isHook");
         isBlockHash = Animator.StringToHash("isBlock");
         isLeftBlockHash = Animator.StringToHash("isLeftBlock");
+        
         // This confirms everything is set up before allowing Update to run
+        combatHud = FindObjectOfType<CombatHudController>();
         isValidSetup = true; 
     }
 
@@ -48,16 +53,23 @@ public class animationStateController : MonoBehaviour
         bool isHook = animator.GetBool(isHookHash);
         bool isBlock = animator.GetBool(isBlockHash);
         bool isLeftBlock = animator.GetBool(isLeftBlockHash);
-        bool Jpressed = Input.GetKey("j");
-        bool Kpressed = Input.GetKey("k");
-        bool Lpressed = Input.GetKey("m");
-        bool Hpressed = Input.GetKey("h");
-        bool Bpressed = Input.GetKey("b");
-        bool Npressed = Input.GetKey("n");
         
+        bool Jpressed = Input.GetKey(KeyCode.J);
+        bool Kpressed = Input.GetKey(KeyCode.K);
+        bool Lpressed = Input.GetKey(KeyCode.M);
+        bool Hpressed = Input.GetKey(KeyCode.H);
+        bool Bpressed = Input.GetKey(KeyCode.B);
+        bool Npressed = Input.GetKey(KeyCode.N);
+        
+
         if (!isJab && Jpressed)
         {
             animator.SetBool(isJabHash, true); // Changed "isJab" to isJabHash for consistency
+        }
+
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
         }
 
         if (isJab && !Jpressed)
@@ -113,6 +125,19 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetBool(isLeftBlockHash, false);
         }
-
+////////////////////////////////////////////////////////////////
+        
+        ////////////////////////////////////////////////////
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            animator.SetTrigger("isSpecial");
+            animator.SetTrigger("isLeftSpecial");
+            
+            BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
+            if (botController != null)
+            {
+                botController.FreezeBot(10f);
+            }
+        }
     }
 }

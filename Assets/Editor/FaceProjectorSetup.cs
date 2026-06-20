@@ -27,14 +27,19 @@ public class FaceProjectorSetup : EditorWindow
         // 1. Create a Projector object
         GameObject faceProjector = new GameObject("FaceProjector");
         
-        // 2. Parent it to the dummy
-        faceProjector.transform.SetParent(selectedObj.transform);
+        // Find the Head bone
+        Transform headBone = FindHeadBone(selectedObj.transform);
         
-        // 3. Set position to point at the face
-        // Assuming dummy faces positive Z, we place projector slightly in front of the face, pointing back at it (or pointing forward depending on the dummy's local forward).
-        // A Decal Projector projects along its local +Z axis.
-        faceProjector.transform.localPosition = new Vector3(0, 1.6f, 0.5f); 
-        faceProjector.transform.localRotation = Quaternion.Euler(0, 180, 0); // Pointing towards the dummy (-Z)
+        // 2. Set world position to point at the face
+        // Assuming dummy faces positive Z, we place projector slightly in front of the face, pointing back at it.
+        Vector3 worldPos = selectedObj.transform.position + selectedObj.transform.up * 1.6f + selectedObj.transform.forward * 0.5f;
+        Quaternion worldRot = selectedObj.transform.rotation * Quaternion.Euler(0, 180, 0); // Pointing towards the dummy (-Z)
+        
+        faceProjector.transform.position = worldPos;
+        faceProjector.transform.rotation = worldRot;
+        
+        // 3. Parent it to the dummy's head bone (keeping world transform)
+        faceProjector.transform.SetParent(headBone, true);
         
         // 4. Add the Decal Projector component
         UnityEngine.Rendering.Universal.DecalProjector decalProjector = faceProjector.AddComponent<UnityEngine.Rendering.Universal.DecalProjector>();
@@ -90,5 +95,26 @@ public class FaceProjectorSetup : EditorWindow
         Selection.activeGameObject = faceProjector;
         
         Debug.Log("Face Projector created and hooked up successfully! Use the Scene view to position and scale the projection box exactly over the dummy's face.");
+    }
+
+    private static Transform FindHeadBone(Transform root)
+    {
+        Animator animator = root.GetComponentInChildren<Animator>();
+        if (animator != null && animator.isHuman)
+        {
+            Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null) return head;
+        }
+
+        Transform[] allChildren = root.GetComponentsInChildren<Transform>();
+        foreach (Transform t in allChildren)
+        {
+            string lowerName = t.name.ToLower();
+            if (lowerName.Contains("head") && !lowerName.Contains("ahead"))
+            {
+                return t;
+            }
+        }
+        return root;
     }
 }

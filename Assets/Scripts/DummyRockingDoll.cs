@@ -27,6 +27,16 @@ public class DummyRockingDoll : MonoBehaviour
     [Header("Debug Settings")]
     public bool debugMode = true;
 
+    [Header("Independent Input Settings")]
+    [Tooltip("If true, the dummy will listen for its own key presses (J, M, K, H, P) and react automatically.")]
+    public bool reactToInputDirectly = true;
+    
+    [Tooltip("How hard the dummy gets knocked back. Increase this to make punches hit harder.")]
+    public float punchForce = 15f;
+    
+    [Tooltip("Delay in seconds before the punch force is applied (to sync with player animation).")]
+    public float reactionDelay = 0.2f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -93,10 +103,19 @@ public class DummyRockingDoll : MonoBehaviour
         joint.highAngularXLimit = limit;
         joint.angularZLimit = limit;
 
-        // Create a powerful spring to constantly push it upright
+        // Configure spring for a natural, weighty sway instead of a rigid snap
         JointDrive drive = new JointDrive();
-        drive.positionSpring = uprightSpringForce * 20f; // Scale up for joint
-        drive.positionDamper = uprightDamping * 5f;
+        
+        // TWEAKING GUIDE: 
+        // - To make the dummy STIFFER (snap back faster): Increase the '0.5f' multiplier or uprightSpringForce.
+        // - To make the dummy SOFTER (wobble and lean more easily): Decrease the '0.5f' multiplier.
+        drive.positionSpring = uprightSpringForce * 0.5f; 
+        
+        // TWEAKING GUIDE:
+        // - To make the dummy SETTLE QUICKLY without bouncing: Increase the '1.5f' multiplier.
+        // - To make the dummy BOUNCE BACK AND FORTH longer: Decrease the '1.5f' multiplier.
+        drive.positionDamper = uprightDamping * 1.5f; 
+        
         drive.maximumForce = float.MaxValue;
 
         joint.angularXDrive = drive;
@@ -107,6 +126,52 @@ public class DummyRockingDoll : MonoBehaviour
     {
         // The ConfigurableJoint now natively handles all spring and upright logic.
         // We no longer need to manually calculate and AddTorque in FixedUpdate.
+    }
+
+    void Update()
+    {
+        if (!reactToInputDirectly) return;
+
+        // Determine "forward" direction relative to the camera to push the dummy away from the view
+        Vector3 pushDirection = Camera.main != null ? Camera.main.transform.forward : -transform.forward;
+        pushDirection.y = 0;
+        pushDirection.Normalize();
+        
+        Vector3 rightDirection = Camera.main != null ? Camera.main.transform.right : -transform.right;
+        rightDirection.y = 0;
+        rightDirection.Normalize();
+
+        // TWEAKING GUIDE: Change these KeyCodes to match whatever buttons you want to trigger punches
+        if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.M)) // Jab / Left Jab
+        {
+            StartCoroutine(ApplyDelayedPunch(pushDirection, reactionDelay));
+        }
+        else if (Input.GetKeyDown(KeyCode.K)) // Left Hook
+        {
+            // Left hook hits from the left, pushes dummy right and back
+            // TWEAKING GUIDE: Change the '0.5f' multiplier to adjust how far sideways a hook pushes the dummy
+            Vector3 hookDir = (pushDirection + rightDirection ).normalized;
+            StartCoroutine(ApplyDelayedPunch(hookDir, reactionDelay + 0.2f)); // Slightly longer delay for left hook
+        }
+        else if (Input.GetKeyDown(KeyCode.H)) // Right Hook
+        {
+            // Right hook hits from the right, pushes dummy left and back
+            Vector3 hookDir = (pushDirection - rightDirection ).normalized;
+            StartCoroutine(ApplyDelayedPunch(hookDir, reactionDelay + 0.2f)); // Slightly longer delay for right hook
+        }
+    }
+
+    IEnumerator ApplyDelayedPunch(Vector3 direction, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Apply force slightly upwards for a better visual impact
+        // TWEAKING GUIDE: Increase '0.2f' if you want the dummy to lift off the ground more when punched
+        Vector3 forceDir = (direction + Vector3.up * 0.2f).normalized;
+        
+        // TWEAKING GUIDE: Increase the '1.5f' multiplier to hit the dummy higher up (like the head),
+        // or decrease it to hit it lower (like the body).
+        TakePunch(forceDir * punchForce, transform.position + Vector3.up * 1.5f);
     }
 
 
