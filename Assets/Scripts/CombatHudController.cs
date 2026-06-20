@@ -63,6 +63,12 @@ public class CombatHudController : MonoBehaviour
 
     private void Awake()
     {
+        // Force max health to 100 to prevent unbalanced inspector settings
+        _playerMaxHealth = 100f;
+        _playerMaxStamina = 100f;
+        _opponentMaxHealth = 100f;
+        _opponentMaxStamina = 100f;
+
         _playerCurrentHealth = _playerMaxHealth;
         _playerCurrentStamina = _playerMaxStamina;
         _opponentCurrentHealth = _opponentMaxHealth;

@@ -10,6 +10,7 @@ public class animationStateController : MonoBehaviour
     int isBlockHash;
     int isLeftBlockHash;
 
+    private CombatHudController combatHud;
 
     bool isValidSetup = false;
 
@@ -37,6 +38,7 @@ public class animationStateController : MonoBehaviour
         isLeftBlockHash = Animator.StringToHash("isLeftBlock");
         
         // This confirms everything is set up before allowing Update to run
+        combatHud = FindObjectOfType<CombatHudController>();
         isValidSetup = true; 
     }
 
@@ -63,6 +65,11 @@ public class animationStateController : MonoBehaviour
         if (!isJab && Jpressed)
         {
             animator.SetBool(isJabHash, true); // Changed "isJab" to isJabHash for consistency
+        }
+
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
         }
 
         if (isJab && !Jpressed)
@@ -125,6 +132,12 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetTrigger("isSpecial");
             animator.SetTrigger("isLeftSpecial");
+            
+            BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
+            if (botController != null)
+            {
+                botController.FreezeBot(10f);
+            }
         }
     }
 }

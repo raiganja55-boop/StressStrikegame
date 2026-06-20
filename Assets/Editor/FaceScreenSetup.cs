@@ -21,17 +21,22 @@ public class FaceScreenSetup : EditorWindow
             return;
         }
 
+        // Find the Head bone
+        Transform headBone = FindHeadBone(selectedObj.transform);
+
         // 1. Create a Quad to act as the face screen
         GameObject faceScreen = GameObject.CreatePrimitive(PrimitiveType.Quad);
         faceScreen.name = "FaceScreen";
         
-        // 2. Parent it to the dummy
-        faceScreen.transform.SetParent(selectedObj.transform);
+        // 2. Set a default approximate world position for a face
+        Vector3 worldPos = selectedObj.transform.position + selectedObj.transform.up * 1.5f + selectedObj.transform.forward * 0.3f;
         
-        // 3. Set a default approximate position for a face (can be tweaked manually by user)
-        // Adjust these values based on the typical height of your dummy
-        faceScreen.transform.localPosition = new Vector3(0, 1.5f, 0.3f); 
-        faceScreen.transform.localRotation = Quaternion.identity;
+        faceScreen.transform.position = worldPos;
+        faceScreen.transform.rotation = selectedObj.transform.rotation;
+        
+        // 3. Parent it to the dummy's head bone (keeping world transform)
+        faceScreen.transform.SetParent(headBone, true);
+        
         // Make it roughly face-sized (e.g., 0.3m x 0.3m)
         faceScreen.transform.localScale = new Vector3(0.3f, 0.3f, 1f);
 
@@ -92,5 +97,26 @@ public class FaceScreenSetup : EditorWindow
         Selection.activeGameObject = faceScreen;
         
         Debug.Log("Face Screen created and hooked up successfully! You may need to manually adjust its position/scale to fit your dummy's face exactly.");
+    }
+
+    private static Transform FindHeadBone(Transform root)
+    {
+        Animator animator = root.GetComponentInChildren<Animator>();
+        if (animator != null && animator.isHuman)
+        {
+            Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null) return head;
+        }
+
+        Transform[] allChildren = root.GetComponentsInChildren<Transform>();
+        foreach (Transform t in allChildren)
+        {
+            string lowerName = t.name.ToLower();
+            if (lowerName.Contains("head") && !lowerName.Contains("ahead"))
+            {
+                return t;
+            }
+        }
+        return root;
     }
 }
