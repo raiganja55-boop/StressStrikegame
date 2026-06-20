@@ -166,43 +166,34 @@ public class RuntimeCharacterImporter : MonoBehaviour
     {
         StoreBaseState();
 
+        float scale = 1f / currentZoom;
+        float offsetX = (1f - scale) / 2f - currentOffsetX;
+        float offsetY = (1f - scale) / 2f - currentOffsetY;
+
         if (faceDecalProjector != null)
         {
-            // Zoom changes the physical size of the projection box
-            Vector3 newSize = initialDecalSize;
-            newSize.x *= currentZoom;
-            newSize.y *= currentZoom;
-            faceDecalProjector.size = newSize;
-
-            // Reset local position first
+            // Keep the physical size and position at their initial values
+            faceDecalProjector.size = initialDecalSize;
             faceDecalProjector.transform.localPosition = initialDecalLocalPos;
-            
-            // Calculate world offset based on the projector's right and up vectors
-            // Negative to make slider movement intuitive (moving slider right moves image right)
-            Vector3 worldOffset = faceDecalProjector.transform.right * (-currentOffsetX) + 
-                                  faceDecalProjector.transform.up * (-currentOffsetY);
-                                  
-            // Apply world offset
-            faceDecalProjector.transform.position += worldOffset;
+
+            // Change UV scale and bias to zoom and pan the image
+            // This prevents the projector bounds from growing and hitting the whole body
+            faceDecalProjector.uvScale = new Vector2(scale, scale);
+            faceDecalProjector.uvBias = new Vector2(offsetX, offsetY);
         }
 
         if (faceQuadRenderer != null)
         {
-            // Zoom changes the quad scale
-            Vector3 newScale = initialQuadLocalScale;
-            newScale.x *= currentZoom;
-            newScale.y *= currentZoom;
-            faceQuadRenderer.transform.localScale = newScale;
-
-            // Reset local position first
+            // Keep the physical scale and position at their initial values
+            faceQuadRenderer.transform.localScale = initialQuadLocalScale;
             faceQuadRenderer.transform.localPosition = initialQuadLocalPos;
 
-            // Calculate world offset
-            Vector3 worldOffset = faceQuadRenderer.transform.right * (-currentOffsetX) + 
-                                  faceQuadRenderer.transform.up * (-currentOffsetY);
-                                  
-            // Apply world offset
-            faceQuadRenderer.transform.position += worldOffset;
+            // Change material UV scale and offset
+            if (faceQuadRenderer.material != null)
+            {
+                faceQuadRenderer.material.mainTextureScale = new Vector2(scale, scale);
+                faceQuadRenderer.material.mainTextureOffset = new Vector2(offsetX, offsetY);
+            }
         }
     }
 
