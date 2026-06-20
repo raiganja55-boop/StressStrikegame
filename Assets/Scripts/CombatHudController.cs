@@ -34,6 +34,9 @@ public class CombatHudController : MonoBehaviour
     [SerializeField] private Image _opponentStaminaFillImage;
     [SerializeField] private Image _opponentStaminaTrailingFillImage;
 
+    [Header("Special Ability")]
+    [SerializeField] private Image _specialAbilityFireFillImage;
+
     [Header("Screen Effects")]
     [SerializeField] private Image _timeFreezeTintImage;
     [Tooltip("How visible the yellow tint is (0 = invisible, 1 = solid yellow).")]
@@ -59,6 +62,13 @@ public class CombatHudController : MonoBehaviour
 
     private int _currentStage = 1;
     private bool _isCleared = false;
+    private bool _isMatchOver = false;
+
+    [Header("KO Screen (Optional)")]
+    [SerializeField] private GameObject _koScreenPanel;
+    [SerializeField] private TextMeshProUGUI _koWinnerText;
+    [SerializeField] private AudioClip _playerWinSound;
+    [SerializeField] private AudioClip _playerLoseSound;
 
     public bool IsPlayerExhausted { get; private set; }
     public bool IsOpponentExhausted { get; private set; }
@@ -74,6 +84,8 @@ public class CombatHudController : MonoBehaviour
 
     private void Awake()
     {
+        Time.timeScale = 1f;
+
         // Force max health to 100 to prevent unbalanced inspector settings
         _playerMaxHealth = 100f;
         _playerMaxStamina = 150f;
@@ -93,6 +105,8 @@ public class CombatHudController : MonoBehaviour
         SetFillImmediate(_opponentHealthTrailingFillImage, 1f);
         SetFillImmediate(_opponentStaminaFillImage, 1f);
         SetFillImmediate(_opponentStaminaTrailingFillImage, 1f);
+        
+        SetFillImmediate(_specialAbilityFireFillImage, 0f);
 
         UpdateRoundText();
         UpdateOpponentProfile();
@@ -252,9 +266,16 @@ public class CombatHudController : MonoBehaviour
     /// </summary>
     public void DrainPlayerHealth(float amount)
     {
+        if (_isMatchOver) return;
+
         _playerCurrentHealth = Mathf.Max(_playerCurrentHealth - amount, 0f);
         float ratio = _playerCurrentHealth / _playerMaxHealth;
         AnimateBar(ref _playerHealthSequence, _playerHealthFillImage, _playerHealthTrailingFillImage, ratio);
+
+        if (_playerCurrentHealth <= 0)
+        {
+            TriggerKO("BOT WINS", false);
+        }
     }
 
     /// <summary>
@@ -272,9 +293,16 @@ public class CombatHudController : MonoBehaviour
     /// </summary>
     public void DrainOpponentHealth(float amount)
     {
+        if (_isMatchOver) return;
+
         _opponentCurrentHealth = Mathf.Max(_opponentCurrentHealth - amount, 0f);
         float ratio = _opponentCurrentHealth / _opponentMaxHealth;
         AnimateBar(ref _opponentHealthSequence, _opponentHealthFillImage, _opponentHealthTrailingFillImage, ratio);
+
+        if (_opponentCurrentHealth <= 0)
+        {
+            TriggerKO("PLAYER WINS", true);
+        }
     }
 
     /// <summary>
@@ -396,6 +424,90 @@ public class CombatHudController : MonoBehaviour
         sequence.AppendInterval(duration - 1f); // 0.5s fade in + 0.5s fade out
         sequence.Append(_timeFreezeTintImage.DOFade(0f, 0.5f));
         sequence.Play();
+    }
+
+    public void UpdateSpecialAbilityBar(float fillRatio)
+    {
+        if (_specialAbilityFireFillImage != null)
+        {
+            // Smoothly animate the fill amount
+            _specialAbilityFireFillImage.DOFillAmount(fillRatio, 0.2f).SetEase(Ease.OutSine);
+        }
+    }
+
+    private void TriggerKO(string winnerText, bool isPlayerWinner)
+    {
+        if (_isMatchOver) return;
+        _isMatchOver = true;
+
+        if (_koScreenPanel != null)
+        {
+            _koScreenPanel.SetActive(true);
+            if (_koWinnerText != null)
+            {
+                _koWinnerText.text = winnerText;
+            }
+        }
+        else
+        {
+            // Fallback: create a simple canvas so it works without inspector setup
+            GameObject canvasObj = new GameObject("KOScreenCanvas");
+            Canvas canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+            
+            // Add a dark semi-transparent background
+            GameObject bgObj = new GameObject("Background");
+            bgObj.transform.SetParent(canvasObj.transform, false);
+            Image bgImage = bgObj.AddComponent<Image>();
+            bgImage.color = new Color(0, 0, 0, 0.7f);
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.sizeDelta = Vector2.zero;
+
+            // Add Text
+            GameObject textObj = new GameObject("KOText");
+            textObj.transform.SetParent(canvasObj.transform, false);
+            TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
+            tmpText.text = "K.O.\n<size=50%>" + winnerText + "</size>";
+            tmpText.fontSize = 120;
+            tmpText.alignment = TextAlignmentOptions.Center;
+            tmpText.color = Color.red;
+            tmpText.fontStyle = FontStyles.Bold;
+            
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = new Vector2(0.5f, 0.5f);
+            textRect.anchorMax = new Vector2(0.5f, 0.5f);
+            textRect.sizeDelta = new Vector2(800, 400);
+            
+            // Animation
+            tmpText.transform.localScale = Vector3.zero;
+            tmpText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+
+        // Play KO Sound based on who won
+        AudioClip soundToPlay = isPlayerWinner ? _playerWinSound : _playerLoseSound;
+        if (soundToPlay != null)
+        {
+            AudioSource audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+            audioSource.PlayOneShot(soundToPlay);
+        }
+
+        // Slow down time for dramatic effect
+        Time.timeScale = 0.2f;
+        
+        // Disable player and bot scripts to stop further actions
+        var playerAnim = FindObjectOfType<animationStateController>();
+        if (playerAnim != null) playerAnim.enabled = false;
+
+        var botAnim = FindObjectOfType<BotAnimationControll>();
+        if (botAnim != null) botAnim.enabled = false;
     }
 
     private void OnDestroy()

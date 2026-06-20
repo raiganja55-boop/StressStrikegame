@@ -18,6 +18,9 @@ public class animationStateController : MonoBehaviour
 
     bool isValidSetup = false;
 
+    private int punchCount = 0;
+    private int requiredPunchesForSpecial = 5;
+
     void Start()
     {
         animator = GetComponent<Animator>();
@@ -89,6 +92,7 @@ public class animationStateController : MonoBehaviour
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
             if (combatHud != null) combatHud.DrainOpponentHealth(15f);
+            RegisterPunch();
         }
 
         if (isJab && !Jpressed)
@@ -105,6 +109,7 @@ public class animationStateController : MonoBehaviour
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
             if (combatHud != null) combatHud.DrainOpponentHealth(15f); // Example damage
+            RegisterPunch();
         }
         
         if (isLeftHook && !Kpressed)
@@ -121,6 +126,7 @@ public class animationStateController : MonoBehaviour
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
             if (combatHud != null) combatHud.DrainOpponentHealth(15f);
+            RegisterPunch();
         }
 
         if (isHook && !Hpressed)
@@ -137,6 +143,7 @@ public class animationStateController : MonoBehaviour
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
             if (combatHud != null) combatHud.DrainOpponentHealth(15f);
+            RegisterPunch();
         }
 
         if (isLeftJab && !Lpressed)
@@ -168,24 +175,42 @@ public class animationStateController : MonoBehaviour
         ////////////////////////////////////////////////////
         if (Input.GetKeyDown(KeyCode.P) && canAct)
         {
-            animator.SetTrigger("isSpecial");
-            animator.SetTrigger("isLeftSpecial");
-            
-            if (specialAbilitySound != null && audioSource != null)
+            if (punchCount >= requiredPunchesForSpecial)
             {
-                audioSource.PlayOneShot(specialAbilitySound);
+                punchCount = 0;
+                if (combatHud != null) combatHud.UpdateSpecialAbilityBar(0f);
+                
+                animator.SetTrigger("isSpecial");
+                animator.SetTrigger("isLeftSpecial");
+                
+                if (specialAbilitySound != null && audioSource != null)
+                {
+                    audioSource.PlayOneShot(specialAbilitySound);
+                }
+                
+                if (combatHud != null)
+                {
+                    combatHud.DrainPlayerStamina(30f); // Special costs more
+                    combatHud.ActivateTimeFreezeTint(10f);
+                }
+                
+                BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
+                if (botController != null)
+                {
+                    botController.FreezeBot(10f);
+                }
             }
-            
-            if (combatHud != null)
+        }
+    }
+
+    private void RegisterPunch()
+    {
+        if (punchCount < requiredPunchesForSpecial)
+        {
+            punchCount++;
+            if (combatHud != null) 
             {
-                combatHud.DrainPlayerStamina(30f); // Special costs more
-                combatHud.ActivateTimeFreezeTint(10f);
-            }
-            
-            BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
-            if (botController != null)
-            {
-                botController.FreezeBot(10f);
+                combatHud.UpdateSpecialAbilityBar((float)punchCount / requiredPunchesForSpecial);
             }
         }
     }
