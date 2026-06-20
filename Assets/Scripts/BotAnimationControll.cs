@@ -11,6 +11,11 @@ public class BotAnimationControll : MonoBehaviour
     private float freezeTimer = 0f;
     private bool isFrozen = false;
 
+    [Header("Audio Settings")]
+    [Tooltip("Array of sound effects to play when the bot hits the player. A random one will be chosen each time.")]
+    public AudioClip[] hitSounds;
+    private AudioSource audioSource;
+
     public void FreezeBot(float duration)
     {
         freezeTimer = duration;
@@ -21,6 +26,25 @@ public class BotAnimationControll : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         combatHud = FindObjectOfType<CombatHudController>();
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
+    }
+
+    private void PlayRandomHitSound()
+    {
+        if (hitSounds != null && hitSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip clip = hitSounds[Random.Range(0, hitSounds.Length)];
+            if (clip != null)
+            {
+                audioSource.PlayOneShot(clip);
+            }
+        }
     }
 
     void Update()
@@ -56,21 +80,25 @@ public class BotAnimationControll : MonoBehaviour
                         if (combatHud != null) combatHud.DrainOpponentStamina(10f);
                         animator.SetTrigger("RightJabTrigger");
                         if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        PlayRandomHitSound();
                         break;
                     case 1:
                         if (combatHud != null) combatHud.DrainOpponentStamina(10f);
                         animator.SetTrigger("LeftJabTrigger");
                         if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        PlayRandomHitSound();
                         break;
                     case 2:
                         if (combatHud != null) combatHud.DrainOpponentStamina(15f);
                         animator.SetTrigger("RightHookTrigger");
                         if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        PlayRandomHitSound();
                         break;
                     case 3:
                         if (combatHud != null) combatHud.DrainOpponentStamina(15f);
                         animator.SetTrigger("LeftHookTrigger");
                         if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        PlayRandomHitSound();
                         break;
                 }
             }
@@ -80,11 +108,13 @@ public class BotAnimationControll : MonoBehaviour
         {
             animator.SetTrigger("RightJabTrigger"); 
             if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+            PlayRandomHitSound();
         }
         if (Input.GetKeyDown("z"))
         {
             animator.SetTrigger("LeftJabTrigger"); 
             if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+            PlayRandomHitSound();
         }
     }
 }
