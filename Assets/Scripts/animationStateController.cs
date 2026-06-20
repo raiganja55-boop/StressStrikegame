@@ -12,6 +12,10 @@ public class animationStateController : MonoBehaviour
 
     private CombatHudController combatHud;
 
+    [Header("Audio Settings")]
+    public AudioClip specialAbilitySound;
+    private AudioSource audioSource;
+
     bool isValidSetup = false;
 
     void Start()
@@ -39,6 +43,14 @@ public class animationStateController : MonoBehaviour
         
         // This confirms everything is set up before allowing Update to run
         combatHud = FindObjectOfType<CombatHudController>();
+        
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
+
         isValidSetup = true; 
     }
 
@@ -159,7 +171,16 @@ public class animationStateController : MonoBehaviour
             animator.SetTrigger("isSpecial");
             animator.SetTrigger("isLeftSpecial");
             
-            if (combatHud != null) combatHud.DrainPlayerStamina(3f); // Special costs more
+            if (specialAbilitySound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(specialAbilitySound);
+            }
+            
+            if (combatHud != null)
+            {
+                combatHud.DrainPlayerStamina(3f); // Special costs more
+                combatHud.ActivateTimeFreezeTint(10f); // Show yellow tint
+            }
             
             BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
             if (botController != null)

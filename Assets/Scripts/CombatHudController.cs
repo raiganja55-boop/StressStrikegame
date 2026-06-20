@@ -34,6 +34,9 @@ public class CombatHudController : MonoBehaviour
     [SerializeField] private Image _opponentStaminaFillImage;
     [SerializeField] private Image _opponentStaminaTrailingFillImage;
 
+    [Header("Screen Effects")]
+    [SerializeField] private Image _timeFreezeTintImage;
+
     [Header("Tween Settings")]
     [SerializeField] private float _trailDelay = 0.4f;
     [SerializeField] private float _fillDuration = 0.25f;
@@ -374,6 +377,23 @@ public class CombatHudController : MonoBehaviour
         {
             image.fillAmount = Mathf.Clamp01(amount);
         }
+    }
+
+    public void ActivateTimeFreezeTint(float duration)
+    {
+        if (_timeFreezeTintImage == null) return;
+        
+        _timeFreezeTintImage.DOKill();
+        
+        // Ensure it's yellow with 0 alpha to start
+        _timeFreezeTintImage.color = new Color(1f, 1f, 0f, 0f);
+        
+        // Fade in to 0.3 alpha, wait, then fade out
+        Sequence sequence = DOTween.Sequence();
+        sequence.Append(_timeFreezeTintImage.DOFade(0.3f, 0.5f));
+        sequence.AppendInterval(duration - 1f); // 0.5s fade in + 0.5s fade out
+        sequence.Append(_timeFreezeTintImage.DOFade(0f, 0.5f));
+        sequence.Play();
     }
 
     private void OnDestroy()
