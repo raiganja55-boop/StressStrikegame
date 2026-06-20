@@ -36,6 +36,8 @@ public class CombatHudController : MonoBehaviour
 
     [Header("Screen Effects")]
     [SerializeField] private Image _timeFreezeTintImage;
+    [Tooltip("How visible the yellow tint is (0 = invisible, 1 = solid yellow).")]
+    [SerializeField] [Range(0f, 1f)] private float _tintMaxAlpha = 0.01f;
 
     [Header("Tween Settings")]
     [SerializeField] private float _trailDelay = 0.4f;
@@ -388,9 +390,9 @@ public class CombatHudController : MonoBehaviour
         // Ensure it's yellow with 0 alpha to start
         _timeFreezeTintImage.color = new Color(1f, 1f, 0f, 0f);
         
-        // Fade in to 0.3 alpha, wait, then fade out
+        // Fade in to the max alpha, wait, then fade out
         Sequence sequence = DOTween.Sequence();
-        sequence.Append(_timeFreezeTintImage.DOFade(0.3f, 0.5f));
+        sequence.Append(_timeFreezeTintImage.DOFade(_tintMaxAlpha, 0.5f));
         sequence.AppendInterval(duration - 1f); // 0.5s fade in + 0.5s fade out
         sequence.Append(_timeFreezeTintImage.DOFade(0f, 0.5f));
         sequence.Play();

@@ -43,7 +43,7 @@ public class animationStateController : MonoBehaviour
         
         // This confirms everything is set up before allowing Update to run
         combatHud = FindObjectOfType<CombatHudController>();
-        
+
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
@@ -88,7 +88,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.J) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
+            if (combatHud != null) combatHud.DrainOpponentHealth(15f);
         }
 
         if (isJab && !Jpressed)
@@ -136,7 +136,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
+            if (combatHud != null) combatHud.DrainOpponentHealth(15f);
         }
 
         if (isLeftJab && !Lpressed)
@@ -178,8 +178,8 @@ public class animationStateController : MonoBehaviour
             
             if (combatHud != null)
             {
-                combatHud.DrainPlayerStamina(3f); // Special costs more
-                combatHud.ActivateTimeFreezeTint(10f); // Show yellow tint
+                combatHud.DrainPlayerStamina(30f); // Special costs more
+                combatHud.ActivateTimeFreezeTint(10f);
             }
             
             BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
