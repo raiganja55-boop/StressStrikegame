@@ -65,8 +65,8 @@ public class animationStateController : MonoBehaviour
         bool Bpressed = Input.GetKey(KeyCode.B);
         bool Npressed = Input.GetKey(KeyCode.N);
         
-        float jabStaminaCost = 10f;
-        float hookStaminaCost = 20f;
+        float jabStaminaCost = 1f;
+        float hookStaminaCost = 2f;
 
         if (!isJab && Jpressed)
         {
@@ -76,7 +76,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.J) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
+            if (combatHud != null) combatHud.DrainOpponentHealth(1.5f);
         }
 
         if (isJab && !Jpressed)
@@ -92,7 +92,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.K) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(15f); // Example damage
+            if (combatHud != null) combatHud.DrainOpponentHealth(1.5f); // Example damage
         }
         
         if (isLeftHook && !Kpressed)
@@ -108,7 +108,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.H) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(15f);
+            if (combatHud != null) combatHud.DrainOpponentHealth(1.5f);
         }
 
         if (isHook && !Hpressed)
@@ -124,7 +124,7 @@ public class animationStateController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M) && canAct)
         {
             if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
-            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
+            if (combatHud != null) combatHud.DrainOpponentHealth(1.5f);
         }
 
         if (isLeftJab && !Lpressed)
@@ -159,7 +159,7 @@ public class animationStateController : MonoBehaviour
             animator.SetTrigger("isSpecial");
             animator.SetTrigger("isLeftSpecial");
             
-            if (combatHud != null) combatHud.DrainPlayerStamina(30f); // Special costs more
+            if (combatHud != null) combatHud.DrainPlayerStamina(3f); // Special costs more
             
             BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
             if (botController != null)

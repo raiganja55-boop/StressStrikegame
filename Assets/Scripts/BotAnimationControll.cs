@@ -53,24 +53,24 @@ public class BotAnimationControll : MonoBehaviour
                 switch (randomAction)
                 {
                     case 0:
-                        if (combatHud != null) combatHud.DrainOpponentStamina(10f);
+                        if (combatHud != null) combatHud.DrainOpponentStamina(1f);
                         animator.SetTrigger("RightJabTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(1f);
                         break;
                     case 1:
-                        if (combatHud != null) combatHud.DrainOpponentStamina(10f);
+                        if (combatHud != null) combatHud.DrainOpponentStamina(1f);
                         animator.SetTrigger("LeftJabTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(1f);
                         break;
                     case 2:
-                        if (combatHud != null) combatHud.DrainOpponentStamina(20f);
+                        if (combatHud != null) combatHud.DrainOpponentStamina(2f);
                         animator.SetTrigger("RightHookTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(1.5f);
                         break;
                     case 3:
-                        if (combatHud != null) combatHud.DrainOpponentStamina(20f);
+                        if (combatHud != null) combatHud.DrainOpponentStamina(2f);
                         animator.SetTrigger("LeftHookTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(1.5f);
                         break;
                 }
             }
