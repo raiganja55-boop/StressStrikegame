@@ -46,10 +46,10 @@ public class CombatHudController : MonoBehaviour
 
     [Header("Player Stats")]
     [SerializeField] private float _playerMaxHealth = 100f;
-    [SerializeField] private float _playerMaxStamina = 100f;
+    [SerializeField] private float _playerMaxStamina = 150f;
 
     [Header("Opponent Stats")]
-    [SerializeField] private float _opponentMaxHealth = 100f;
+    [SerializeField] private float _opponentMaxHealth = 200f;
     [SerializeField] private float _opponentMaxStamina = 100f;
 
     private float _playerCurrentHealth;
@@ -76,8 +76,8 @@ public class CombatHudController : MonoBehaviour
     {
         // Force max health to 100 to prevent unbalanced inspector settings
         _playerMaxHealth = 100f;
-        _playerMaxStamina = 100f;
-        _opponentMaxHealth = 100f;
+        _playerMaxStamina = 150f;
+        _opponentMaxHealth = 200f;
         _opponentMaxStamina = 100f;
 
         _playerCurrentHealth = _playerMaxHealth;
