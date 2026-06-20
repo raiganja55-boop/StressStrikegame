@@ -39,27 +39,40 @@ public class BotAnimationControll : MonoBehaviour
         actionTimer += Time.deltaTime;
         if (actionTimer >= actionInterval)
         {
-            actionTimer = 0f;
-            int randomAction = Random.Range(0, 4);
-            
-            switch (randomAction)
+            // If the opponent is exhausted, wait until stamina is fully refilled.
+            if (combatHud != null && combatHud.IsOpponentExhausted)
             {
-                case 0:
-                    animator.SetTrigger("RightJabTrigger");
-                    if (combatHud != null) combatHud.DrainPlayerHealth(10f);
-                    break;
-                case 1:
-                    animator.SetTrigger("LeftJabTrigger");
-                    if (combatHud != null) combatHud.DrainPlayerHealth(10f);
-                    break;
-                case 2:
-                    animator.SetTrigger("RightHookTrigger");
-                    if (combatHud != null) combatHud.DrainPlayerHealth(15f);
-                    break;
-                case 3:
-                    animator.SetTrigger("LeftHookTrigger");
-                    if (combatHud != null) combatHud.DrainPlayerHealth(15f);
-                    break;
+                // Cap the timer so it triggers immediately when exhaustion ends.
+                actionTimer = actionInterval; 
+            }
+            else
+            {
+                actionTimer = 0f;
+                int randomAction = Random.Range(0, 4);
+                
+                switch (randomAction)
+                {
+                    case 0:
+                        if (combatHud != null) combatHud.DrainOpponentStamina(10f);
+                        animator.SetTrigger("RightJabTrigger");
+                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        break;
+                    case 1:
+                        if (combatHud != null) combatHud.DrainOpponentStamina(10f);
+                        animator.SetTrigger("LeftJabTrigger");
+                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        break;
+                    case 2:
+                        if (combatHud != null) combatHud.DrainOpponentStamina(20f);
+                        animator.SetTrigger("RightHookTrigger");
+                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        break;
+                    case 3:
+                        if (combatHud != null) combatHud.DrainOpponentStamina(20f);
+                        animator.SetTrigger("LeftHookTrigger");
+                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        break;
+                }
             }
         }
 

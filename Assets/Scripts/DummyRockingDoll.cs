@@ -132,6 +132,10 @@ public class DummyRockingDoll : MonoBehaviour
     {
         if (!reactToInputDirectly) return;
 
+        // Prevent physics reaction if player is exhausted
+        CombatHudController combatHud = FindObjectOfType<CombatHudController>();
+        if (combatHud != null && combatHud.IsPlayerExhausted) return;
+
         // Determine "forward" direction relative to the camera to push the dummy away from the view
         Vector3 pushDirection = Camera.main != null ? Camera.main.transform.forward : -transform.forward;
         pushDirection.y = 0;

@@ -55,6 +55,12 @@ public class CombatHudController : MonoBehaviour
     private int _currentStage = 1;
     private bool _isCleared = false;
 
+    public bool IsPlayerExhausted { get; private set; }
+    public bool IsOpponentExhausted { get; private set; }
+
+    [Header("Stamina Settings")]
+    [SerializeField] private float _staminaRegenRate = 20f;
+
     // Track active tweens so we can kill them before starting new ones
     private Sequence _playerHealthSequence;
     private Sequence _playerStaminaSequence;
@@ -113,6 +119,36 @@ public class CombatHudController : MonoBehaviour
         if (Keyboard.current.upArrowKey.wasPressedThisFrame)
         {
             AdvanceRound();
+        }
+
+        // Stamina Exhaustion Tracking
+        if (_playerCurrentStamina <= 0 && !IsPlayerExhausted)
+        {
+            IsPlayerExhausted = true;
+        }
+        else if (IsPlayerExhausted && _playerCurrentStamina >= _playerMaxStamina)
+        {
+            IsPlayerExhausted = false;
+        }
+
+        if (_opponentCurrentStamina <= 0 && !IsOpponentExhausted)
+        {
+            IsOpponentExhausted = true;
+        }
+        else if (IsOpponentExhausted && _opponentCurrentStamina >= _opponentMaxStamina)
+        {
+            IsOpponentExhausted = false;
+        }
+
+        // Stamina Regeneration
+        if (_playerCurrentStamina < _playerMaxStamina)
+        {
+            RegenPlayerStamina(_staminaRegenRate * Time.deltaTime);
+        }
+
+        if (_opponentCurrentStamina < _opponentMaxStamina)
+        {
+            RegenOpponentStamina(_staminaRegenRate * Time.deltaTime);
         }
     }
 
@@ -284,6 +320,22 @@ public class CombatHudController : MonoBehaviour
         _opponentCurrentStamina = Mathf.Min(_opponentCurrentStamina + amount, _opponentMaxStamina);
         float ratio = _opponentCurrentStamina / _opponentMaxStamina;
         AnimateBar(ref _opponentStaminaSequence, _opponentStaminaFillImage, _opponentStaminaTrailingFillImage, ratio);
+    }
+
+    private void RegenPlayerStamina(float amount)
+    {
+        _playerCurrentStamina = Mathf.Min(_playerCurrentStamina + amount, _playerMaxStamina);
+        float ratio = _playerCurrentStamina / _playerMaxStamina;
+        SetFillImmediate(_playerStaminaFillImage, ratio);
+        SetFillImmediate(_playerStaminaTrailingFillImage, ratio);
+    }
+
+    private void RegenOpponentStamina(float amount)
+    {
+        _opponentCurrentStamina = Mathf.Min(_opponentCurrentStamina + amount, _opponentMaxStamina);
+        float ratio = _opponentCurrentStamina / _opponentMaxStamina;
+        SetFillImmediate(_opponentStaminaFillImage, ratio);
+        SetFillImmediate(_opponentStaminaTrailingFillImage, ratio);
     }
 
     // ─────────────────────────────────────────────

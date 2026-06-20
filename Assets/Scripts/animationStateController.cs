@@ -54,21 +54,28 @@ public class animationStateController : MonoBehaviour
         bool isBlock = animator.GetBool(isBlockHash);
         bool isLeftBlock = animator.GetBool(isLeftBlockHash);
         
-        bool Jpressed = Input.GetKey(KeyCode.J);
-        bool Kpressed = Input.GetKey(KeyCode.K);
-        bool Lpressed = Input.GetKey(KeyCode.M);
-        bool Hpressed = Input.GetKey(KeyCode.H);
+        bool canAct = combatHud == null || !combatHud.IsPlayerExhausted;
+
+        bool Jpressed = Input.GetKey(KeyCode.J) && canAct;
+        bool Kpressed = Input.GetKey(KeyCode.K) && canAct;
+        bool Lpressed = Input.GetKey(KeyCode.M) && canAct;
+        bool Hpressed = Input.GetKey(KeyCode.H) && canAct;
+        
+        // Blocking does not cost stamina and is not prevented by exhaustion
         bool Bpressed = Input.GetKey(KeyCode.B);
         bool Npressed = Input.GetKey(KeyCode.N);
         
+        float jabStaminaCost = 10f;
+        float hookStaminaCost = 20f;
 
         if (!isJab && Jpressed)
         {
             animator.SetBool(isJabHash, true); // Changed "isJab" to isJabHash for consistency
         }
 
-        if (Input.GetKeyDown(KeyCode.J))
+        if (Input.GetKeyDown(KeyCode.J) && canAct)
         {
+            if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
             if (combatHud != null) combatHud.DrainOpponentHealth(10f);
         }
 
@@ -81,6 +88,13 @@ public class animationStateController : MonoBehaviour
         {
             animator.SetBool(isLeftHookHash, true);
         }
+        
+        if (Input.GetKeyDown(KeyCode.K) && canAct)
+        {
+            if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
+            if (combatHud != null) combatHud.DrainOpponentHealth(15f); // Example damage
+        }
+        
         if (isLeftHook && !Kpressed)
         {
             animator.SetBool(isLeftHookHash, false);
@@ -91,6 +105,12 @@ public class animationStateController : MonoBehaviour
             animator.SetBool(isHookHash, true);
         }
 
+        if (Input.GetKeyDown(KeyCode.H) && canAct)
+        {
+            if (combatHud != null) combatHud.DrainPlayerStamina(hookStaminaCost);
+            if (combatHud != null) combatHud.DrainOpponentHealth(15f);
+        }
+
         if (isHook && !Hpressed)
         {
             animator.SetBool(isHookHash, false);
@@ -99,6 +119,12 @@ public class animationStateController : MonoBehaviour
         if (!isLeftJab && Lpressed)
         {
             animator.SetBool(isLeftJabHash, true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.M) && canAct)
+        {
+            if (combatHud != null) combatHud.DrainPlayerStamina(jabStaminaCost);
+            if (combatHud != null) combatHud.DrainOpponentHealth(10f);
         }
 
         if (isLeftJab && !Lpressed)
@@ -128,10 +154,12 @@ public class animationStateController : MonoBehaviour
 ////////////////////////////////////////////////////////////////
         
         ////////////////////////////////////////////////////
-        if (Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.P) && canAct)
         {
             animator.SetTrigger("isSpecial");
             animator.SetTrigger("isLeftSpecial");
+            
+            if (combatHud != null) combatHud.DrainPlayerStamina(30f); // Special costs more
             
             BotAnimationControll botController = FindObjectOfType<BotAnimationControll>();
             if (botController != null)
