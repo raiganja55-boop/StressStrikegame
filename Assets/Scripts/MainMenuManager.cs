@@ -1,68 +1,90 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using DG.Tweening;
 
 public class MainMenuManager : MonoBehaviour
 {
-    // --- LEGACY VARIABLES ADDED TO PREVENT COMPILATION ERRORS ---
-    [Header("Sub Buttons for Play (Legacy)")]
-    public RectTransform playButton;
-    public RectTransform arenaButton;
-    public RectTransform trainingButton;
-    
-    [Header("Legacy Panels")]
-    public CanvasGroup settingsPanel;
-    public CanvasGroup loginPanel;
-    // -----------------------------------------------------------
-
-    [Header("Menu Canvases (CanvasGroups)")]
-    [Tooltip("The main menu canvas containing Play, Options, Store, Quit.")]
-    [SerializeField] private CanvasGroup mainMenuCanvas;
-    [Tooltip("The arena menu canvas containing Arena, Training.")]
-    [SerializeField] private CanvasGroup arenaMenuCanvas;
-    [Tooltip("The level selection canvas containing Level 1, 2, and 3.")]
-    [SerializeField] private CanvasGroup levelSelectorCanvas;
-
-    [Header("Overlay Panels (CanvasGroups)")]
-    [Tooltip("The options popup panel.")]
-    public CanvasGroup optionsPanel;
-    [Tooltip("The store popup panel.")]
-    public CanvasGroup storePanel;
-
-    [Header("Transition Settings")]
-    [SerializeField] private float transitionDuration = 0.4f;
-    [SerializeField] private Ease transitionEase = Ease.OutQuad;
+    private GameObject mainMenuCanvas;
+    private GameObject arenaMenuCanvas;
+    private GameObject levelSelectorCanvas;
+    private GameObject shopMenuCanvas;
 
     private void Start()
     {
-        // 1. Initialize screen states (only Main Menu visible on start)
-        InitializeMenuState(mainMenuCanvas, true);
-        InitializeMenuState(arenaMenuCanvas, false);
-        InitializeMenuState(levelSelectorCanvas, false);
+        Debug.Log("--- ULTIMATE MENU MANAGER INITIALIZING ---");
         
-        // 2. Hide overlay panels instantly
-        if (optionsPanel != null) HidePanelImmediate(optionsPanel);
-        if (storePanel != null) HidePanelImmediate(storePanel);
+        // 1. Find all Canvases and Buttons automatically!
+        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+        
+        foreach (Transform t in allTransforms)
+        {
+            // Skip prefabs that aren't actually in the scene
+            if (t.gameObject.scene != this.gameObject.scene) continue;
+            
+            string objName = t.gameObject.name;
+            string btnName = objName.ToLower().Trim();
+
+            // --- FIND CANVASES ---
+            if (objName == "MainMenu") mainMenuCanvas = t.gameObject;
+            else if (objName == "ArenaMenu") arenaMenuCanvas = t.gameObject;
+            else if (objName == "Level") levelSelectorCanvas = t.gameObject;
+            else if (objName == "ShopMenu") shopMenuCanvas = t.gameObject;
+
+            // --- FIND BUTTONS ---
+            bool isButton = btnName == "play" || btnName == "options" || btnName == "store" || btnName == "shop" || btnName == "quit" ||
+                            btnName == "arena" || btnName == "training" || btnName == "exit" || btnName == "back" || btnName == "close" ||
+                            btnName == "level 1" || btnName == "arena mode (1)" || btnName == "level 2" || btnName == "arena mode (2)" ||
+                            btnName == "level 3" || btnName == "arena mode (3)";
+
+            if (isButton)
+            {
+                Button btn = t.GetComponent<Button>();
+                if (btn == null) btn = t.gameObject.AddComponent<Button>(); // Auto-add Button if missing
+                
+                // Clear out any old, broken Unity inspector events!
+                btn.onClick.RemoveAllListeners();
+
+                // Add the new listener directly via C# code
+                if (btnName == "play") btn.onClick.AddListener(OnPlayClicked);
+                else if (btnName == "store" || btnName == "shop") btn.onClick.AddListener(OnStoreClicked);
+                else if (btnName == "quit") btn.onClick.AddListener(OnQuitClicked);
+                
+                else if (btnName == "arena") btn.onClick.AddListener(OnArenaClicked);
+                else if (btnName == "training") btn.onClick.AddListener(OnTrainingClicked);
+                
+                else if (btnName == "level 1" || btnName == "arena mode (1)") btn.onClick.AddListener(() => LoadScene("Level 1"));
+                else if (btnName == "level 2" || btnName == "arena mode (2)") btn.onClick.AddListener(() => LoadScene("Level 2"));
+                else if (btnName == "level 3" || btnName == "arena mode (3)") btn.onClick.AddListener(() => LoadScene("Level 3"));
+                
+                else if (btnName == "exit" || btnName == "back" || btnName == "close") 
+                {
+                    btn.onClick.AddListener(() => OnBackOrExitClicked(t));
+                }
+            }
+        }
+
+        // 2. Set the exact starting state
+        if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
+        if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
+        if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(false);
+        if (shopMenuCanvas != null) shopMenuCanvas.SetActive(false);
+        
+        Debug.Log("--- ULTIMATE MENU MANAGER READY! ---");
     }
 
-    #region --- Main Menu Actions ---
-    // Transitions from Main Menu -> Arena Menu
-    public void OnPlayClicked()
+    #region --- Button Click Logic ---
+    private void OnPlayClicked()
     {
-        TransitionCanvases(mainMenuCanvas, arenaMenuCanvas);
+        if (mainMenuCanvas != null) mainMenuCanvas.SetActive(false);
+        if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(true);
     }
 
-    public void OnOptionsClicked()
+    private void OnStoreClicked()
     {
-        ShowPanelOverlay(optionsPanel);
+        if (shopMenuCanvas != null) shopMenuCanvas.SetActive(true);
     }
 
-    public void OnStoreClicked()
-    {
-        ShowPanelOverlay(storePanel);
-    }
-
-    public void OnQuitClicked()
+    private void OnQuitClicked()
     {
         Debug.Log("Quit game requested.");
 #if UNITY_EDITOR
@@ -71,181 +93,44 @@ public class MainMenuManager : MonoBehaviour
         Application.Quit();
 #endif
     }
-    #endregion
 
-    #region --- Arena Menu Actions ---
-    // Transitions from Arena Menu -> Level Selector
-    public void OnArenaClicked()
+    private void OnArenaClicked()
     {
-        TransitionCanvases(arenaMenuCanvas, levelSelectorCanvas);
+        if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
+        if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(true);
     }
 
-    // Loads Training Scene (or preview)
-    public void OnTrainingClicked()
+    private void OnTrainingClicked()
     {
-        Debug.Log("Loading Training Scene...");
-        LoadScene("TrainingScenePreview"); 
+        // I am setting this to "idlee" since you mentioned it before!
+        // If your training scene is named something else, just change this text.
+        LoadScene("idlee"); 
     }
 
-    // Back from Arena Menu -> Main Menu
-    public void OnArenaMenuBackClicked()
+    private void OnBackOrExitClicked(Transform clickedButtonTransform)
     {
-        TransitionCanvases(arenaMenuCanvas, mainMenuCanvas);
-    }
-    #endregion
-
-    #region --- Level Selection Actions ---
-    public void OnLevel1Clicked()
-    {
-        LoadScene("Level 1");
-    }
-
-    public void OnLevel2Clicked()
-    {
-        LoadScene("Level 2");
-    }
-
-    public void OnLevel3Clicked()
-    {
-        LoadScene("Level 3");
-    }
-
-    // Back from Level Selector -> Arena Menu
-    public void OnLevelSelectorBackClicked()
-    {
-        TransitionCanvases(levelSelectorCanvas, arenaMenuCanvas);
-    }
-    #endregion
-
-    #region --- Panel Overlay Actions ---
-    // Close Options Panel and return to Main Menu
-    public void CloseOptions()
-    {
-        HidePanelOverlay(optionsPanel);
-    }
-
-    // Close Store Panel and return to Main Menu
-    public void CloseStore()
-    {
-        HidePanelOverlay(storePanel);
-    }
-    #endregion
-
-    #region --- Helper Animations & Navigation ---
-    /// <summary>
-    /// Snaps a CanvasGroup to its initial active/inactive state immediately on start.
-    /// </summary>
-    private void InitializeMenuState(CanvasGroup canvasGroup, bool show)
-    {
-        if (canvasGroup == null) return;
-        canvasGroup.gameObject.SetActive(show);
-        canvasGroup.alpha = show ? 1f : 0f;
-        canvasGroup.interactable = show;
-        canvasGroup.blocksRaycasts = show;
-        canvasGroup.transform.localScale = Vector3.one;
-    }
-
-    /// <summary>
-    /// Smoothly fades and scales out fromCanvas, and fades/scales in toCanvas.
-    /// </summary>
-    private void TransitionCanvases(CanvasGroup fromCanvas, CanvasGroup toCanvas)
-    {
-        if (fromCanvas != null)
+        // Smart back button: detects which menu it lives inside to know where to go back to!
+        if (arenaMenuCanvas != null && clickedButtonTransform.IsChildOf(arenaMenuCanvas.transform))
         {
-            fromCanvas.interactable = false;
-            fromCanvas.blocksRaycasts = false;
-            fromCanvas.DOFade(0f, transitionDuration).SetEase(transitionEase);
-            fromCanvas.transform.DOScale(0.95f, transitionDuration).SetEase(transitionEase)
-                .OnComplete(() => fromCanvas.gameObject.SetActive(false));
+            arenaMenuCanvas.SetActive(false);
+            if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
         }
-
-        if (toCanvas != null)
+        else if (levelSelectorCanvas != null && clickedButtonTransform.IsChildOf(levelSelectorCanvas.transform))
         {
-            toCanvas.gameObject.SetActive(true);
-            toCanvas.alpha = 0f;
-            toCanvas.transform.localScale = Vector3.one * 0.95f;
-            
-            toCanvas.DOFade(1f, transitionDuration).SetEase(transitionEase);
-            toCanvas.transform.DOScale(1f, transitionDuration).SetEase(transitionEase)
-                .OnComplete(() =>
-                {
-                    toCanvas.interactable = true;
-                    toCanvas.blocksRaycasts = true;
-                });
+            levelSelectorCanvas.SetActive(false);
+            if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(true);
+        }
+        else if (shopMenuCanvas != null && clickedButtonTransform.IsChildOf(shopMenuCanvas.transform))
+        {
+            shopMenuCanvas.SetActive(false);
+            // Shop just closes its overlay
         }
     }
+    #endregion
 
-    /// <summary>
-    /// Opens an overlay panel with a premium pop-up elastic scale animation.
-    /// </summary>
-    private void ShowPanelOverlay(CanvasGroup panel)
-    {
-        if (panel == null) return;
-        panel.gameObject.SetActive(true);
-        panel.alpha = 0f;
-        panel.transform.localScale = Vector3.one * 0.8f;
-        panel.interactable = false;
-        panel.blocksRaycasts = false;
-        
-        panel.DOFade(1f, transitionDuration).SetEase(Ease.OutBack);
-        panel.transform.DOScale(1f, transitionDuration).SetEase(Ease.OutBack)
-            .OnComplete(() =>
-            {
-                panel.interactable = true;
-                panel.blocksRaycasts = true;
-            });
-    }
-
-    /// <summary>
-    /// Closes an overlay panel with a smooth scale-down and fade-out animation.
-    /// </summary>
-    private void HidePanelOverlay(CanvasGroup panel)
-    {
-        if (panel == null || !panel.gameObject.activeSelf) return;
-        
-        panel.interactable = false;
-        panel.blocksRaycasts = false;
-        panel.transform.DOScale(0.8f, transitionDuration).SetEase(Ease.InBack);
-        panel.DOFade(0f, transitionDuration).SetEase(Ease.InBack)
-            .OnComplete(() => panel.gameObject.SetActive(false));
-    }
-
-    private void HidePanelImmediate(CanvasGroup panel)
-    {
-        if (panel == null) return;
-        panel.alpha = 0f;
-        panel.interactable = false;
-        panel.blocksRaycasts = false;
-        panel.gameObject.SetActive(false);
-    }
-
-    /// <summary>
-    /// Safely loads a scene using the SceneTransitionManager if present in your scene.
-    /// </summary>
     private void LoadScene(string sceneName)
     {
-        // Reflection check to avoid compiler errors if SceneTransitionManager doesn't exist
-        var type = System.Type.GetType("SceneTransitionManager");
-        if (type != null)
-        {
-            var instanceProperty = type.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (instanceProperty != null)
-            {
-                var instance = instanceProperty.GetValue(null);
-                if (instance != null)
-                {
-                    var loadMethod = type.GetMethod("LoadScene", new System.Type[] { typeof(string) });
-                    if (loadMethod != null)
-                    {
-                        loadMethod.Invoke(instance, new object[] { sceneName });
-                        return;
-                    }
-                }
-            }
-        }
-        
-        // Fallback to direct scene loading
+        Debug.Log($"Loading Scene: {sceneName}");
         SceneManager.LoadScene(sceneName);
     }
-    #endregion
 }
