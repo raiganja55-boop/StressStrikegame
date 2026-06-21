@@ -4,33 +4,49 @@ using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
 {
-    private GameObject mainMenuCanvas;
-    private GameObject arenaMenuCanvas;
-    private GameObject levelSelectorCanvas;
-    private GameObject shopMenuCanvas;
+    [Header("Menu Canvases (Drag these in manually!)")]
+    public GameObject mainMenuCanvas;
+    public GameObject arenaMenuCanvas;
+    public GameObject levelSelectorCanvas;
+    public GameObject shopMenuCanvas;
+    public GameObject settingsCanvas;
+
+    private enum MenuState { Main, Arena, Level, Shop }
+    private MenuState currentState = MenuState.Main;
 
     private void Start()
     {
-        Debug.Log("--- ULTIMATE MENU MANAGER INITIALIZING ---");
-        
-        // 1. Find all Canvases and Buttons automatically!
-        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
-        
-        foreach (Transform t in allTransforms)
+        // Fallback: If you didn't drag them in, try to find them by name
+        // (But this only finds ACTIVE objects. For hidden ones, you MUST drag them in!)
+        if (mainMenuCanvas == null) mainMenuCanvas = GameObject.Find("MainMenu");
+        if (arenaMenuCanvas == null) arenaMenuCanvas = GameObject.Find("ArenaMenu");
+        if (levelSelectorCanvas == null) levelSelectorCanvas = GameObject.Find("Level");
+        if (shopMenuCanvas == null) shopMenuCanvas = GameObject.Find("ShopMenu");
+        if (settingsCanvas == null) settingsCanvas = GameObject.Find("Settings");
+
+        // Hook up buttons ONLY inside our known canvases!
+        if (mainMenuCanvas != null) HookUpButtons(mainMenuCanvas.transform);
+        if (arenaMenuCanvas != null) HookUpButtons(arenaMenuCanvas.transform);
+        if (levelSelectorCanvas != null) HookUpButtons(levelSelectorCanvas.transform);
+        if (shopMenuCanvas != null) HookUpButtons(shopMenuCanvas.transform);
+        if (settingsCanvas != null) HookUpButtons(settingsCanvas.transform);
+
+        // Set initial state
+        if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
+        if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
+        if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(false);
+        if (shopMenuCanvas != null) shopMenuCanvas.SetActive(false);
+        if (settingsCanvas != null) settingsCanvas.SetActive(false);
+        currentState = MenuState.Main;
+    }
+
+    private void HookUpButtons(Transform canvasRoot)
+    {
+        Transform[] allChildren = canvasRoot.GetComponentsInChildren<Transform>(true);
+        foreach (Transform t in allChildren)
         {
-            // Skip prefabs that aren't actually in the scene
-            if (t.gameObject.scene != this.gameObject.scene) continue;
-            
-            string objName = t.gameObject.name;
-            string btnName = objName.ToLower().Trim();
+            string btnName = t.gameObject.name.ToLower().Trim();
 
-            // --- FIND CANVASES ---
-            if (objName == "MainMenu") mainMenuCanvas = t.gameObject;
-            else if (objName == "ArenaMenu") arenaMenuCanvas = t.gameObject;
-            else if (objName == "Level") levelSelectorCanvas = t.gameObject;
-            else if (objName == "ShopMenu") shopMenuCanvas = t.gameObject;
-
-            // --- FIND BUTTONS ---
             bool isButton = btnName == "play" || btnName == "options" || btnName == "store" || btnName == "shop" || btnName == "quit" ||
                             btnName == "arena" || btnName == "training" || btnName == "exit" || btnName == "back" || btnName == "close" ||
                             btnName == "level 1" || btnName == "arena mode (1)" || btnName == "level 2" || btnName == "arena mode (2)" ||
@@ -39,16 +55,16 @@ public class MainMenuManager : MonoBehaviour
             if (isButton)
             {
                 Button btn = t.GetComponent<Button>();
-                if (btn == null) btn = t.gameObject.AddComponent<Button>(); // Auto-add Button if missing
-                
-                // Clear out any old, broken Unity inspector events!
-                btn.onClick.RemoveAllListeners();
+                if (btn == null) btn = t.gameObject.AddComponent<Button>();
 
-                // Add the new listener directly via C# code
+                // CRITICAL: RemoveAllListeners() doesn't delete Inspector events.
+                // We MUST wipe the entire onClick event clean to destroy any broken inspector references!
+                btn.onClick = new Button.ButtonClickedEvent();
+
                 if (btnName == "play") btn.onClick.AddListener(OnPlayClicked);
+                else if (btnName == "options") btn.onClick.AddListener(OnOptionsClicked);
                 else if (btnName == "store" || btnName == "shop") btn.onClick.AddListener(OnStoreClicked);
                 else if (btnName == "quit") btn.onClick.AddListener(OnQuitClicked);
-                
                 else if (btnName == "arena") btn.onClick.AddListener(OnArenaClicked);
                 else if (btnName == "training") btn.onClick.AddListener(OnTrainingClicked);
                 
@@ -58,35 +74,32 @@ public class MainMenuManager : MonoBehaviour
                 
                 else if (btnName == "exit" || btnName == "back" || btnName == "close") 
                 {
-                    btn.onClick.AddListener(() => OnBackOrExitClicked(t));
+                    btn.onClick.AddListener(OnBackOrExitClicked);
                 }
             }
         }
-
-        // 2. Set the exact starting state
-        if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
-        if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
-        if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(false);
-        if (shopMenuCanvas != null) shopMenuCanvas.SetActive(false);
-        
-        Debug.Log("--- ULTIMATE MENU MANAGER READY! ---");
     }
 
-    #region --- Button Click Logic ---
     private void OnPlayClicked()
     {
         if (mainMenuCanvas != null) mainMenuCanvas.SetActive(false);
         if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(true);
+        currentState = MenuState.Arena;
+    }
+
+    private void OnOptionsClicked()
+    {
+        if (settingsCanvas != null) settingsCanvas.SetActive(true);
     }
 
     private void OnStoreClicked()
     {
         if (shopMenuCanvas != null) shopMenuCanvas.SetActive(true);
+        // Overlay menu, don't change base state
     }
 
     private void OnQuitClicked()
     {
-        Debug.Log("Quit game requested.");
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -98,39 +111,41 @@ public class MainMenuManager : MonoBehaviour
     {
         if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
         if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(true);
+        currentState = MenuState.Level;
     }
 
     private void OnTrainingClicked()
     {
-        // I am setting this to "idlee" since you mentioned it before!
-        // If your training scene is named something else, just change this text.
-        LoadScene("idlee"); 
+        LoadScene("UI Mainmenu"); 
     }
 
-    private void OnBackOrExitClicked(Transform clickedButtonTransform)
+    private void OnBackOrExitClicked()
     {
-        // Smart back button: detects which menu it lives inside to know where to go back to!
-        if (arenaMenuCanvas != null && clickedButtonTransform.IsChildOf(arenaMenuCanvas.transform))
+        // Bulletproof back button using actual state, not hierarchy guessing
+        if (shopMenuCanvas != null && shopMenuCanvas.activeSelf)
         {
-            arenaMenuCanvas.SetActive(false);
-            if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
+            shopMenuCanvas.SetActive(false); // Close overlay
         }
-        else if (levelSelectorCanvas != null && clickedButtonTransform.IsChildOf(levelSelectorCanvas.transform))
+        else if (settingsCanvas != null && settingsCanvas.activeSelf)
         {
-            levelSelectorCanvas.SetActive(false);
+            settingsCanvas.SetActive(false); // Close overlay
+        }
+        else if (currentState == MenuState.Level)
+        {
+            if (levelSelectorCanvas != null) levelSelectorCanvas.SetActive(false);
             if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(true);
+            currentState = MenuState.Arena;
         }
-        else if (shopMenuCanvas != null && clickedButtonTransform.IsChildOf(shopMenuCanvas.transform))
+        else if (currentState == MenuState.Arena)
         {
-            shopMenuCanvas.SetActive(false);
-            // Shop just closes its overlay
+            if (arenaMenuCanvas != null) arenaMenuCanvas.SetActive(false);
+            if (mainMenuCanvas != null) mainMenuCanvas.SetActive(true);
+            currentState = MenuState.Main;
         }
     }
-    #endregion
 
     private void LoadScene(string sceneName)
     {
-        Debug.Log($"Loading Scene: {sceneName}");
         SceneManager.LoadScene(sceneName);
     }
 }
