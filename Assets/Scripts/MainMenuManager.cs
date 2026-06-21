@@ -4,174 +4,248 @@ using DG.Tweening;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("Sub Buttons for Play")]
+    // --- LEGACY VARIABLES ADDED TO PREVENT COMPILATION ERRORS ---
+    [Header("Sub Buttons for Play (Legacy)")]
     public RectTransform playButton;
     public RectTransform arenaButton;
     public RectTransform trainingButton;
-    private bool isPlayExpanded = false;
-
-    [Header("Panels")]
+    
+    [Header("Legacy Panels")]
     public CanvasGroup settingsPanel;
-    public CanvasGroup optionsPanel;
-    public CanvasGroup storePanel;
     public CanvasGroup loginPanel;
-    private bool isSettingsOpen = false;
+    // -----------------------------------------------------------
 
-    [Header("Arena / Next Screen")]
-    public CanvasGroup mainMenuCanvasGroup;
-    public CanvasGroup arenaCanvasGroup;
+    [Header("Menu Canvases (CanvasGroups)")]
+    [Tooltip("The main menu canvas containing Play, Options, Store, Quit.")]
+    [SerializeField] private CanvasGroup mainMenuCanvas;
+    [Tooltip("The arena menu canvas containing Arena, Training.")]
+    [SerializeField] private CanvasGroup arenaMenuCanvas;
+    [Tooltip("The level selection canvas containing Level 1, 2, and 3.")]
+    [SerializeField] private CanvasGroup levelSelectorCanvas;
 
-    [Header("Camera Animation")]
-    public Animator cameraAnimator;
-    public string cameraAnimationTrigger = "MoveToArena";
+    [Header("Overlay Panels (CanvasGroups)")]
+    [Tooltip("The options popup panel.")]
+    public CanvasGroup optionsPanel;
+    [Tooltip("The store popup panel.")]
+    public CanvasGroup storePanel;
+
+    [Header("Transition Settings")]
+    [SerializeField] private float transitionDuration = 0.4f;
+    [SerializeField] private Ease transitionEase = Ease.OutQuad;
 
     private void Start()
     {
-        // Initialize sub-buttons state
-        if (arenaButton != null) arenaButton.localScale = Vector3.zero;
-        if (trainingButton != null) trainingButton.localScale = Vector3.zero;
-
-        // Initialize panels state
-        HideSettingsImmediate();
-        HideAllPanelsImmediate();
-    }
-
-    public void TogglePlayOptions()
-    {
-        ToggleSettingsPanel();
-    }
-
-    public void ToggleSettingsPanel()
-    {
-        isSettingsOpen = !isSettingsOpen;
-
-        if (isSettingsOpen)
-        {
-            ShowPanel(settingsPanel);
-        }
-        else
-        {
-            HidePanel(settingsPanel);
-        }
-    }
-
-    public void OpenArenaMenu()
-    {
-        Debug.Log("Transitioning to Arena UI with Camera Animation...");
+        // 1. Initialize screen states (only Main Menu visible on start)
+        InitializeMenuState(mainMenuCanvas, true);
+        InitializeMenuState(arenaMenuCanvas, false);
+        InitializeMenuState(levelSelectorCanvas, false);
         
-        // 1. Play the Camera Animation
-        if (cameraAnimator != null)
+        // 2. Hide overlay panels instantly
+        if (optionsPanel != null) HidePanelImmediate(optionsPanel);
+        if (storePanel != null) HidePanelImmediate(storePanel);
+    }
+
+    #region --- Main Menu Actions ---
+    // Transitions from Main Menu -> Arena Menu
+    public void OnPlayClicked()
+    {
+        TransitionCanvases(mainMenuCanvas, arenaMenuCanvas);
+    }
+
+    public void OnOptionsClicked()
+    {
+        ShowPanelOverlay(optionsPanel);
+    }
+
+    public void OnStoreClicked()
+    {
+        ShowPanelOverlay(storePanel);
+    }
+
+    public void OnQuitClicked()
+    {
+        Debug.Log("Quit game requested.");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+    #endregion
+
+    #region --- Arena Menu Actions ---
+    // Transitions from Arena Menu -> Level Selector
+    public void OnArenaClicked()
+    {
+        TransitionCanvases(arenaMenuCanvas, levelSelectorCanvas);
+    }
+
+    // Loads Training Scene (or preview)
+    public void OnTrainingClicked()
+    {
+        Debug.Log("Loading Training Scene...");
+        LoadScene("TrainingScenePreview"); 
+    }
+
+    // Back from Arena Menu -> Main Menu
+    public void OnArenaMenuBackClicked()
+    {
+        TransitionCanvases(arenaMenuCanvas, mainMenuCanvas);
+    }
+    #endregion
+
+    #region --- Level Selection Actions ---
+    public void OnLevel1Clicked()
+    {
+        LoadScene("Level 1");
+    }
+
+    public void OnLevel2Clicked()
+    {
+        LoadScene("Level 2");
+    }
+
+    public void OnLevel3Clicked()
+    {
+        LoadScene("Level 3");
+    }
+
+    // Back from Level Selector -> Arena Menu
+    public void OnLevelSelectorBackClicked()
+    {
+        TransitionCanvases(levelSelectorCanvas, arenaMenuCanvas);
+    }
+    #endregion
+
+    #region --- Panel Overlay Actions ---
+    // Close Options Panel and return to Main Menu
+    public void CloseOptions()
+    {
+        HidePanelOverlay(optionsPanel);
+    }
+
+    // Close Store Panel and return to Main Menu
+    public void CloseStore()
+    {
+        HidePanelOverlay(storePanel);
+    }
+    #endregion
+
+    #region --- Helper Animations & Navigation ---
+    /// <summary>
+    /// Snaps a CanvasGroup to its initial active/inactive state immediately on start.
+    /// </summary>
+    private void InitializeMenuState(CanvasGroup canvasGroup, bool show)
+    {
+        if (canvasGroup == null) return;
+        canvasGroup.gameObject.SetActive(show);
+        canvasGroup.alpha = show ? 1f : 0f;
+        canvasGroup.interactable = show;
+        canvasGroup.blocksRaycasts = show;
+        canvasGroup.transform.localScale = Vector3.one;
+    }
+
+    /// <summary>
+    /// Smoothly fades and scales out fromCanvas, and fades/scales in toCanvas.
+    /// </summary>
+    private void TransitionCanvases(CanvasGroup fromCanvas, CanvasGroup toCanvas)
+    {
+        if (fromCanvas != null)
         {
-            cameraAnimator.SetTrigger(cameraAnimationTrigger);
+            fromCanvas.interactable = false;
+            fromCanvas.blocksRaycasts = false;
+            fromCanvas.DOFade(0f, transitionDuration).SetEase(transitionEase);
+            fromCanvas.transform.DOScale(0.95f, transitionDuration).SetEase(transitionEase)
+                .OnComplete(() => fromCanvas.gameObject.SetActive(false));
         }
 
-        // 2. Fade OUT the Main Menu Canvas
-        if (mainMenuCanvasGroup != null)
+        if (toCanvas != null)
         {
-            mainMenuCanvasGroup.interactable = false;
-            mainMenuCanvasGroup.blocksRaycasts = false;
-            mainMenuCanvasGroup.DOFade(0f, 0.5f);
-        }
-
-        // 3. Fade IN the Arena Canvas
-        if (arenaCanvasGroup != null)
-        {
-            arenaCanvasGroup.gameObject.SetActive(true);
-            arenaCanvasGroup.DOFade(1f, 0.5f).SetDelay(0.3f); // Slight delay so camera moves first
-            arenaCanvasGroup.interactable = true;
-            arenaCanvasGroup.blocksRaycasts = true;
+            toCanvas.gameObject.SetActive(true);
+            toCanvas.alpha = 0f;
+            toCanvas.transform.localScale = Vector3.one * 0.95f;
+            
+            toCanvas.DOFade(1f, transitionDuration).SetEase(transitionEase);
+            toCanvas.transform.DOScale(1f, transitionDuration).SetEase(transitionEase)
+                .OnComplete(() =>
+                {
+                    toCanvas.interactable = true;
+                    toCanvas.blocksRaycasts = true;
+                });
         }
     }
 
-    public void StartArenaMatch()
-    {
-        Debug.Log("Starting Arena Match! (Add your scene name here)");
-        // SceneManager.LoadScene("ArenaScene");
-    }
-
-    public void LoadArena()
-    {
-        StartArenaMatch();
-    }
-
-    public void StartTrainingMatch()
-    {
-        Debug.Log("Starting Training Match! (Add your scene name here)");
-        // SceneManager.LoadScene("TrainingScene");
-    }
-
-    public void LoadTraining()
-    {
-        StartTrainingMatch();
-    }
-
-    public void OpenOptions()
-    {
-        ShowPanel(optionsPanel);
-    }
-
-    public void OpenStore()
-    {
-        ShowPanel(storePanel);
-    }
-
-    public void OpenLogin()
-    {
-        ShowPanel(loginPanel);
-    }
-
-    public void CloseAllPanels()
-    {
-        HidePanel(settingsPanel);
-        HidePanel(optionsPanel);
-        HidePanel(storePanel);
-        HidePanel(loginPanel);
-    }
-
-    private void ShowPanel(CanvasGroup panel)
+    /// <summary>
+    /// Opens an overlay panel with a premium pop-up elastic scale animation.
+    /// </summary>
+    private void ShowPanelOverlay(CanvasGroup panel)
     {
         if (panel == null) return;
-        
-        CloseAllPanels(); // Close others first
         panel.gameObject.SetActive(true);
         panel.alpha = 0f;
-        panel.DOFade(1f, 0.4f);
         panel.transform.localScale = Vector3.one * 0.8f;
-        panel.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack);
-        panel.interactable = true;
-        panel.blocksRaycasts = true;
+        panel.interactable = false;
+        panel.blocksRaycasts = false;
+        
+        panel.DOFade(1f, transitionDuration).SetEase(Ease.OutBack);
+        panel.transform.DOScale(1f, transitionDuration).SetEase(Ease.OutBack)
+            .OnComplete(() =>
+            {
+                panel.interactable = true;
+                panel.blocksRaycasts = true;
+            });
     }
 
-    private void HidePanel(CanvasGroup panel)
+    /// <summary>
+    /// Closes an overlay panel with a smooth scale-down and fade-out animation.
+    /// </summary>
+    private void HidePanelOverlay(CanvasGroup panel)
     {
         if (panel == null || !panel.gameObject.activeSelf) return;
         
         panel.interactable = false;
         panel.blocksRaycasts = false;
-        panel.transform.DOScale(0.8f, 0.3f).SetEase(Ease.InBack);
-        panel.DOFade(0f, 0.3f).OnComplete(() => panel.gameObject.SetActive(false));
+        panel.transform.DOScale(0.8f, transitionDuration).SetEase(Ease.InBack);
+        panel.DOFade(0f, transitionDuration).SetEase(Ease.InBack)
+            .OnComplete(() => panel.gameObject.SetActive(false));
     }
 
-    private void HideAllPanelsImmediate()
+    private void HidePanelImmediate(CanvasGroup panel)
     {
-        if (settingsPanel) { settingsPanel.alpha = 0; settingsPanel.gameObject.SetActive(false); }
-        if (optionsPanel) { optionsPanel.alpha = 0; optionsPanel.gameObject.SetActive(false); }
-        if (storePanel) { storePanel.alpha = 0; storePanel.gameObject.SetActive(false); }
-        if (loginPanel) { loginPanel.alpha = 0; loginPanel.gameObject.SetActive(false); }
+        if (panel == null) return;
+        panel.alpha = 0f;
+        panel.interactable = false;
+        panel.blocksRaycasts = false;
+        panel.gameObject.SetActive(false);
     }
 
-    private void HideSettingsImmediate()
+    /// <summary>
+    /// Safely loads a scene using the SceneTransitionManager if present in your scene.
+    /// </summary>
+    private void LoadScene(string sceneName)
     {
-        if (!settingsPanel) return;
-        settingsPanel.alpha = 0;
-        settingsPanel.interactable = false;
-        settingsPanel.blocksRaycasts = false;
-        settingsPanel.gameObject.SetActive(false);
+        // Reflection check to avoid compiler errors if SceneTransitionManager doesn't exist
+        var type = System.Type.GetType("SceneTransitionManager");
+        if (type != null)
+        {
+            var instanceProperty = type.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (instanceProperty != null)
+            {
+                var instance = instanceProperty.GetValue(null);
+                if (instance != null)
+                {
+                    var loadMethod = type.GetMethod("LoadScene", new System.Type[] { typeof(string) });
+                    if (loadMethod != null)
+                    {
+                        loadMethod.Invoke(instance, new object[] { sceneName });
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // Fallback to direct scene loading
+        SceneManager.LoadScene(sceneName);
     }
-
-    public void QuitGame()
-    {
-        Debug.Log("QUIT GAME");
-        Application.Quit();
-    }
+    #endregion
 }
