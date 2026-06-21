@@ -13,10 +13,13 @@ public class CombatHudController : MonoBehaviour
     [SerializeField] private Image _playerPortraitImage;
     [SerializeField] private Image _opponentPortraitImage;
 
-    [Header("Opponent Icons (Assign in Inspector)")]
-    [SerializeField] private Sprite _damienIcon;
-    [SerializeField] private Sprite _brockIcon;
-    [SerializeField] private Sprite _silasIcon;
+    [Header("Opponent Profiles (Assign in Inspector)")]
+    [SerializeField] private string _stage1Name = "Damien";
+    [SerializeField] private Sprite _stage1Icon;
+    [SerializeField] private string _stage2Name = "Brock";
+    [SerializeField] private Sprite _stage2Icon;
+    [SerializeField] private string _stage3Name = "Silas";
+    [SerializeField] private Sprite _stage3Icon;
 
     [Header("Player Health")]
     [SerializeField] private Image _playerHealthFillImage;
@@ -86,11 +89,7 @@ public class CombatHudController : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        // Force max health to 100 to prevent unbalanced inspector settings
-        _playerMaxHealth = 100f;
-        _playerMaxStamina = 150f;
-        _opponentMaxHealth = 200f;
-        _opponentMaxStamina = 100f;
+        // Use the inspector values for stats so different scenes can have different difficulty settings
 
         _playerCurrentHealth = _playerMaxHealth;
         _playerCurrentStamina = _playerMaxStamina;
@@ -247,16 +246,16 @@ public class CombatHudController : MonoBehaviour
         switch (_currentStage)
         {
             case 1:
-                _opponentNameText.text = "Damien";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _damienIcon;
+                _opponentNameText.text = _stage1Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage1Icon;
                 break;
             case 2:
-                _opponentNameText.text = "Brock";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _brockIcon;
+                _opponentNameText.text = _stage2Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage2Icon;
                 break;
             case 3:
-                _opponentNameText.text = "Silas";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _silasIcon;
+                _opponentNameText.text = _stage3Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage3Icon;
                 break;
         }
     }

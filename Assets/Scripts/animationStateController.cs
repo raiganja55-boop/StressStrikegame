@@ -14,6 +14,7 @@ public class animationStateController : MonoBehaviour
 
     [Header("Audio Settings")]
     public AudioClip specialAbilitySound;
+    public AudioClip secretAudioClip;
     private AudioSource audioSource;
 
     bool isValidSetup = false;
@@ -173,6 +174,14 @@ public class animationStateController : MonoBehaviour
 ////////////////////////////////////////////////////////////////
         
         ////////////////////////////////////////////////////
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            if (secretAudioClip != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(secretAudioClip);
+            }
+        }
+
         if (Input.GetKeyDown(KeyCode.P) && canAct)
         {
             if (punchCount >= requiredPunchesForSpecial)

@@ -6,7 +6,9 @@ public class BotAnimationControll : MonoBehaviour
     private CombatHudController combatHud;
     
     private float actionTimer = 0f;
-    private float actionInterval = 2f;
+    [Header("Difficulty Settings")]
+    [Tooltip("Time in seconds between bot attacks. Lower value = faster attacks/harder difficulty.")]
+    public float actionInterval = 2f;
 
     private float freezeTimer = 0f;
     private bool isFrozen = false;
@@ -79,25 +81,25 @@ public class BotAnimationControll : MonoBehaviour
                     case 0:
                         if (combatHud != null) combatHud.DrainOpponentStamina(10f);
                         animator.SetTrigger("RightJabTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(20f);
                         PlayRandomHitSound();
                         break;
                     case 1:
                         if (combatHud != null) combatHud.DrainOpponentStamina(10f);
                         animator.SetTrigger("LeftJabTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(20f);
                         PlayRandomHitSound();
                         break;
                     case 2:
                         if (combatHud != null) combatHud.DrainOpponentStamina(15f);
                         animator.SetTrigger("RightHookTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(25f);
                         PlayRandomHitSound();
                         break;
                     case 3:
                         if (combatHud != null) combatHud.DrainOpponentStamina(15f);
                         animator.SetTrigger("LeftHookTrigger");
-                        if (combatHud != null) combatHud.DrainPlayerHealth(15f);
+                        if (combatHud != null) combatHud.DrainPlayerHealth(25f);
                         PlayRandomHitSound();
                         break;
                 }
@@ -107,13 +109,13 @@ public class BotAnimationControll : MonoBehaviour
         if (Input.GetKeyDown("i"))
         {
             animator.SetTrigger("RightJabTrigger"); 
-            if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+            if (combatHud != null) combatHud.DrainPlayerHealth(20f);
             PlayRandomHitSound();
         }
         if (Input.GetKeyDown("z"))
         {
             animator.SetTrigger("LeftJabTrigger"); 
-            if (combatHud != null) combatHud.DrainPlayerHealth(10f);
+            if (combatHud != null) combatHud.DrainPlayerHealth(20f);
             PlayRandomHitSound();
         }
     }
