@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class CombatHudController : MonoBehaviour
 {
@@ -507,6 +509,20 @@ public class CombatHudController : MonoBehaviour
 
         var botAnim = FindObjectOfType<BotAnimationControll>();
         if (botAnim != null) botAnim.enabled = false;
+
+        StartCoroutine(ReturnToMainMenuRoutine());
+    }
+
+    private IEnumerator ReturnToMainMenuRoutine()
+    {
+        // Wait for a few seconds using unscaled time because timeScale is 0.2f
+        yield return new WaitForSecondsRealtime(4f);
+        
+        // Restore time scale
+        Time.timeScale = 1f;
+        
+        // Load the main menu scene
+        SceneManager.LoadScene("idlee");
     }
 
     private void OnDestroy()
