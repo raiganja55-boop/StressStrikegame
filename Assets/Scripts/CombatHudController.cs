@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class CombatHudController : MonoBehaviour
 {
@@ -324,6 +326,124 @@ public class CombatHudController : MonoBehaviour
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    public void ActivateTimeFreezeTint(float duration)
+    {
+        if (_timeFreezeTintImage == null) return;
+        
+        _timeFreezeTintImage.DOKill();
+        
+        // Ensure it's yellow with 0 alpha to start
+        _timeFreezeTintImage.color = new Color(1f, 1f, 0f, 0f);
+        
+        // Fade in to the max alpha, wait, then fade out
+        Sequence sequence = DOTween.Sequence();
+        sequence.Append(_timeFreezeTintImage.DOFade(_tintMaxAlpha, 0.5f));
+        sequence.AppendInterval(duration - 1f); // 0.5s fade in + 0.5s fade out
+        sequence.Append(_timeFreezeTintImage.DOFade(0f, 0.5f));
+        sequence.Play();
+    }
+
+    public void UpdateSpecialAbilityBar(float fillRatio)
+    {
+        if (_specialAbilityFireFillImage != null)
+        {
+            // Smoothly animate the fill amount
+            _specialAbilityFireFillImage.DOFillAmount(fillRatio, 0.2f).SetEase(Ease.OutSine);
+        }
+    }
+
+    private void TriggerKO(string winnerText, bool isPlayerWinner)
+    {
+        if (_isMatchOver) return;
+        _isMatchOver = true;
+
+        if (_koScreenPanel != null)
+        {
+            _koScreenPanel.SetActive(true);
+            if (_koWinnerText != null)
+            {
+                _koWinnerText.text = winnerText;
+            }
+        }
+        else
+        {
+            // Fallback: create a simple canvas so it works without inspector setup
+            GameObject canvasObj = new GameObject("KOScreenCanvas");
+            Canvas canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+            
+            // Add a dark semi-transparent background
+            GameObject bgObj = new GameObject("Background");
+            bgObj.transform.SetParent(canvasObj.transform, false);
+            Image bgImage = bgObj.AddComponent<Image>();
+            bgImage.color = new Color(0, 0, 0, 0.7f);
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.sizeDelta = Vector2.zero;
+
+            // Add Text
+            GameObject textObj = new GameObject("KOText");
+            textObj.transform.SetParent(canvasObj.transform, false);
+            TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
+            tmpText.text = "K.O.\n<size=50%>" + winnerText + "</size>";
+            tmpText.fontSize = 120;
+            tmpText.alignment = TextAlignmentOptions.Center;
+            tmpText.color = Color.red;
+            tmpText.fontStyle = FontStyles.Bold;
+            
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = new Vector2(0.5f, 0.5f);
+            textRect.anchorMax = new Vector2(0.5f, 0.5f);
+            textRect.sizeDelta = new Vector2(800, 400);
+            
+            // Animation
+            tmpText.transform.localScale = Vector3.zero;
+            tmpText.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack).SetUpdate(true);
+        }
+
+        // Play KO Sound based on who won
+        AudioClip soundToPlay = isPlayerWinner ? _playerWinSound : _playerLoseSound;
+        if (soundToPlay != null)
+        {
+            AudioSource audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+            audioSource.PlayOneShot(soundToPlay);
+        }
+
+        // Slow down time for dramatic effect
+        Time.timeScale = 0.2f;
+        
+        // Disable player and bot scripts to stop further actions
+        var playerAnim = FindObjectOfType<animationStateController>();
+        if (playerAnim != null) playerAnim.enabled = false;
+
+        var botAnim = FindObjectOfType<BotAnimationControll>();
+        if (botAnim != null) botAnim.enabled = false;
+
+        StartCoroutine(ReturnToMainMenuRoutine());
+    }
+
+    private IEnumerator ReturnToMainMenuRoutine()
+    {
+        // Wait for a few seconds using unscaled time because timeScale is 0.2f
+        yield return new WaitForSecondsRealtime(4f);
+        
+        // Restore time scale
+        Time.timeScale = 1f;
+        
+        // Load the main menu scene
+        SceneManager.LoadScene("idlee");
+    }
+
+>>>>>>> Stashed changes
     private void OnDestroy()
     {
         // Clean up all tweens when this object is destroyed
