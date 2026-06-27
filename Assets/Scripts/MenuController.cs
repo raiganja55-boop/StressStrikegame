@@ -11,34 +11,58 @@ public class MenuController : MonoBehaviour
     public class MenuStation
     {
         public string stationName;
-        public Transform cameraAnchor; // The empty GameObject marking where the camera should go
-        public GameObject[] uiPanelsToActivate; // The UI panels to turn ON at this station
+        public Transform cameraAnchor; 
+        public GameObject[] uiPanelsToActivate; 
+        public bool keepPreviousPanelsOpen = false;
     }
 
     [Header("Menu Stations")]
     public MenuStation[] stations;
-    
+
     [Header("All UI Panels")]
-    [Tooltip("Drag EVERY UI panel here so the script can turn them all off while moving.")]
     public GameObject[] allUiPanels;
+
+    private int currentStationIndex = 0;
+    private bool isMoving = false;
 
     private void Start()
     {
-        // Go to the first station (Home) when the game starts
+        // Instantly snap to the first station on start, no animation!
         if (stations != null && stations.Length > 0)
-            GoToStation(0);
+        {
+            SnapToStation(0);
+        }
+    }
+
+    public void ToggleStation(int stationIndex)
+    {
+        if (isMoving) return;
+
+        if (currentStationIndex == stationIndex && stationIndex != 0)
+        {
+            // Already here, go back Home
+            StartCoroutine(MoveCameraRoutine(0));
+        }
+        else
+        {
+            // Go to new station
+            StartCoroutine(MoveCameraRoutine(stationIndex));
+        }
     }
 
     public void GoToStation(int stationIndex)
     {
-        if (stations == null || stationIndex < 0 || stationIndex >= stations.Length) return;
-        StopAllCoroutines();
-        StartCoroutine(MoveCameraRoutine(stations[stationIndex]));
+        if (isMoving) return;
+        StartCoroutine(MoveCameraRoutine(stationIndex));
     }
 
-    private IEnumerator MoveCameraRoutine(MenuStation targetStation)
+    // Instantly snaps everything without moving/animating (used for Start)
+    private void SnapToStation(int targetIndex)
     {
-        // 1. Turn OFF all UI panels before the camera starts moving
+        if (stations == null || targetIndex >= stations.Length) return;
+        MenuStation targetStation = stations[targetIndex];
+
+        // Turn off all panels
         if (allUiPanels != null)
         {
             foreach(var panel in allUiPanels)
@@ -47,28 +71,14 @@ public class MenuController : MonoBehaviour
             }
         }
 
-        if (mainCamera == null || targetStation == null || targetStation.cameraAnchor == null) yield break;
-
-        // 2. Prepare for camera movement
-        Vector3 startPos = mainCamera.transform.position;
-        Quaternion startRot = mainCamera.transform.rotation;
-        
-        float timeElapsed = 0;
-
-        // 3. Smoothly move and rotate the camera to the new anchor
-        while (timeElapsed < 1)
+        // Snap camera instantly
+        if (targetStation.cameraAnchor != null && mainCamera != null)
         {
-            timeElapsed += Time.deltaTime * transitionSpeed;
-            
-            float smoothCurve = Mathf.SmoothStep(0, 1, timeElapsed);
-
-            mainCamera.transform.position = Vector3.Lerp(startPos, targetStation.cameraAnchor.position, smoothCurve);
-            mainCamera.transform.rotation = Quaternion.Lerp(startRot, targetStation.cameraAnchor.rotation, smoothCurve);
-            
-            yield return null;
+            mainCamera.transform.position = targetStation.cameraAnchor.position;
+            mainCamera.transform.rotation = targetStation.cameraAnchor.rotation;
         }
 
-        // 4. We have arrived! Turn ON the specific UI panels for this station
+        // Turn on correct panels instantly
         if (targetStation.uiPanelsToActivate != null)
         {
             foreach(var panel in targetStation.uiPanelsToActivate)
@@ -76,5 +86,53 @@ public class MenuController : MonoBehaviour
                 if (panel != null) panel.SetActive(true);
             }
         }
+
+        currentStationIndex = targetIndex;
+    }
+
+    private IEnumerator MoveCameraRoutine(int targetIndex)
+    {
+        if (stations == null || targetIndex >= stations.Length) yield break;
+        
+        isMoving = true;
+        MenuStation targetStation = stations[targetIndex];
+
+        if (!targetStation.keepPreviousPanelsOpen && allUiPanels != null)
+        {
+            foreach(var panel in allUiPanels)
+            {
+                if (panel != null) panel.SetActive(false);
+            }
+        }
+
+        Vector3 startPos = mainCamera.transform.position;
+        Quaternion startRot = mainCamera.transform.rotation;
+
+        float timeElapsed = 0;
+
+        while (timeElapsed < 1)
+        {
+            timeElapsed += Time.deltaTime * transitionSpeed;
+            float smoothCurve = Mathf.SmoothStep(0, 1, timeElapsed);
+
+            if (targetStation.cameraAnchor != null && mainCamera != null)
+            {
+                mainCamera.transform.position = Vector3.Lerp(startPos, targetStation.cameraAnchor.position, smoothCurve);
+                mainCamera.transform.rotation = Quaternion.Lerp(startRot, targetStation.cameraAnchor.rotation, smoothCurve);
+            }
+
+            yield return null;
+        }
+
+        if (targetStation.uiPanelsToActivate != null)
+        {
+            foreach(var panel in targetStation.uiPanelsToActivate)
+            {
+                if (panel != null) panel.SetActive(true);
+            }
+        }
+
+        currentStationIndex = targetIndex;
+        isMoving = false;
     }
 }

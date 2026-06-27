@@ -37,10 +37,22 @@ public class DummyRockingDoll : MonoBehaviour
     [Tooltip("Delay in seconds before the punch force is applied (to sync with player animation).")]
     public float reactionDelay = 0.2f;
 
+    [Header("Audio Settings")]
+    [Tooltip("Array of sound effects to play when the dummy is hit. A random one will be chosen each time.")]
+    public AudioClip[] punchSounds;
+    private AudioSource audioSource;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
+
         // Apply our heavier mass so it doesn't fly away easily
         rb.mass = dummyMass;
 
@@ -132,6 +144,10 @@ public class DummyRockingDoll : MonoBehaviour
     {
         if (!reactToInputDirectly) return;
 
+        // Prevent physics reaction if player is exhausted
+        CombatHudController combatHud = FindObjectOfType<CombatHudController>();
+        if (combatHud != null && combatHud.IsPlayerExhausted) return;
+
         // Determine "forward" direction relative to the camera to push the dummy away from the view
         Vector3 pushDirection = Camera.main != null ? Camera.main.transform.forward : -transform.forward;
         pushDirection.y = 0;
@@ -184,5 +200,14 @@ public class DummyRockingDoll : MonoBehaviour
     public void TakePunch(Vector3 force, Vector3 hitPoint)
     {
         rb.AddForceAtPosition(force, hitPoint, ForceMode.Impulse);
+
+        if (punchSounds != null && punchSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip clip = punchSounds[Random.Range(0, punchSounds.Length)];
+            if (clip != null)
+            {
+                audioSource.PlayOneShot(clip);
+            }
+        }
     }
 }

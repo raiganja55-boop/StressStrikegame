@@ -15,10 +15,13 @@ public class CombatHudController : MonoBehaviour
     [SerializeField] private Image _playerPortraitImage;
     [SerializeField] private Image _opponentPortraitImage;
 
-    [Header("Opponent Icons (Assign in Inspector)")]
-    [SerializeField] private Sprite _damienIcon;
-    [SerializeField] private Sprite _brockIcon;
-    [SerializeField] private Sprite _silasIcon;
+    [Header("Opponent Profiles (Assign in Inspector)")]
+    [SerializeField] private string _stage1Name = "Damien";
+    [SerializeField] private Sprite _stage1Icon;
+    [SerializeField] private string _stage2Name = "Brock";
+    [SerializeField] private Sprite _stage2Icon;
+    [SerializeField] private string _stage3Name = "Silas";
+    [SerializeField] private Sprite _stage3Icon;
 
     [Header("Player Health")]
     [SerializeField] private Image _playerHealthFillImage;
@@ -36,6 +39,14 @@ public class CombatHudController : MonoBehaviour
     [SerializeField] private Image _opponentStaminaFillImage;
     [SerializeField] private Image _opponentStaminaTrailingFillImage;
 
+    [Header("Special Ability")]
+    [SerializeField] private Image _specialAbilityFireFillImage;
+
+    [Header("Screen Effects")]
+    [SerializeField] private Image _timeFreezeTintImage;
+    [Tooltip("How visible the yellow tint is (0 = invisible, 1 = solid yellow).")]
+    [SerializeField] [Range(0f, 1f)] private float _tintMaxAlpha = 0.01f;
+
     [Header("Tween Settings")]
     [SerializeField] private float _trailDelay = 0.4f;
     [SerializeField] private float _fillDuration = 0.25f;
@@ -43,10 +54,10 @@ public class CombatHudController : MonoBehaviour
 
     [Header("Player Stats")]
     [SerializeField] private float _playerMaxHealth = 100f;
-    [SerializeField] private float _playerMaxStamina = 100f;
+    [SerializeField] private float _playerMaxStamina = 150f;
 
     [Header("Opponent Stats")]
-    [SerializeField] private float _opponentMaxHealth = 100f;
+    [SerializeField] private float _opponentMaxHealth = 200f;
     [SerializeField] private float _opponentMaxStamina = 100f;
 
     private float _playerCurrentHealth;
@@ -56,6 +67,19 @@ public class CombatHudController : MonoBehaviour
 
     private int _currentStage = 1;
     private bool _isCleared = false;
+    private bool _isMatchOver = false;
+
+    [Header("KO Screen (Optional)")]
+    [SerializeField] private GameObject _koScreenPanel;
+    [SerializeField] private TextMeshProUGUI _koWinnerText;
+    [SerializeField] private AudioClip _playerWinSound;
+    [SerializeField] private AudioClip _playerLoseSound;
+
+    public bool IsPlayerExhausted { get; private set; }
+    public bool IsOpponentExhausted { get; private set; }
+
+    [Header("Stamina Settings")]
+    [SerializeField] private float _staminaRegenRate = 20f;
 
     // Track active tweens so we can kill them before starting new ones
     private Sequence _playerHealthSequence;
@@ -65,11 +89,9 @@ public class CombatHudController : MonoBehaviour
 
     private void Awake()
     {
-        // Force max health to 100 to prevent unbalanced inspector settings
-        _playerMaxHealth = 100f;
-        _playerMaxStamina = 100f;
-        _opponentMaxHealth = 100f;
-        _opponentMaxStamina = 100f;
+        Time.timeScale = 1f;
+
+        // Use the inspector values for stats so different scenes can have different difficulty settings
 
         _playerCurrentHealth = _playerMaxHealth;
         _playerCurrentStamina = _playerMaxStamina;
@@ -84,6 +106,8 @@ public class CombatHudController : MonoBehaviour
         SetFillImmediate(_opponentHealthTrailingFillImage, 1f);
         SetFillImmediate(_opponentStaminaFillImage, 1f);
         SetFillImmediate(_opponentStaminaTrailingFillImage, 1f);
+        
+        SetFillImmediate(_specialAbilityFireFillImage, 0f);
 
         UpdateRoundText();
         UpdateOpponentProfile();
@@ -115,6 +139,36 @@ public class CombatHudController : MonoBehaviour
         if (Keyboard.current.upArrowKey.wasPressedThisFrame)
         {
             AdvanceRound();
+        }
+
+        // Stamina Exhaustion Tracking
+        if (_playerCurrentStamina <= 0 && !IsPlayerExhausted)
+        {
+            IsPlayerExhausted = true;
+        }
+        else if (IsPlayerExhausted && _playerCurrentStamina >= _playerMaxStamina)
+        {
+            IsPlayerExhausted = false;
+        }
+
+        if (_opponentCurrentStamina <= 0 && !IsOpponentExhausted)
+        {
+            IsOpponentExhausted = true;
+        }
+        else if (IsOpponentExhausted && _opponentCurrentStamina >= _opponentMaxStamina)
+        {
+            IsOpponentExhausted = false;
+        }
+
+        // Stamina Regeneration
+        if (_playerCurrentStamina < _playerMaxStamina)
+        {
+            RegenPlayerStamina(_staminaRegenRate * Time.deltaTime);
+        }
+
+        if (_opponentCurrentStamina < _opponentMaxStamina)
+        {
+            RegenOpponentStamina(_staminaRegenRate * Time.deltaTime);
         }
     }
 
@@ -194,16 +248,16 @@ public class CombatHudController : MonoBehaviour
         switch (_currentStage)
         {
             case 1:
-                _opponentNameText.text = "Damien";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _damienIcon;
+                _opponentNameText.text = _stage1Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage1Icon;
                 break;
             case 2:
-                _opponentNameText.text = "Brock";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _brockIcon;
+                _opponentNameText.text = _stage2Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage2Icon;
                 break;
             case 3:
-                _opponentNameText.text = "Silas";
-                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _silasIcon;
+                _opponentNameText.text = _stage3Name;
+                if (_opponentPortraitImage != null) _opponentPortraitImage.sprite = _stage3Icon;
                 break;
         }
     }
@@ -213,9 +267,16 @@ public class CombatHudController : MonoBehaviour
     /// </summary>
     public void DrainPlayerHealth(float amount)
     {
+        if (_isMatchOver) return;
+
         _playerCurrentHealth = Mathf.Max(_playerCurrentHealth - amount, 0f);
         float ratio = _playerCurrentHealth / _playerMaxHealth;
         AnimateBar(ref _playerHealthSequence, _playerHealthFillImage, _playerHealthTrailingFillImage, ratio);
+
+        if (_playerCurrentHealth <= 0)
+        {
+            TriggerKO("BOT WINS", false);
+        }
     }
 
     /// <summary>
@@ -233,9 +294,16 @@ public class CombatHudController : MonoBehaviour
     /// </summary>
     public void DrainOpponentHealth(float amount)
     {
+        if (_isMatchOver) return;
+
         _opponentCurrentHealth = Mathf.Max(_opponentCurrentHealth - amount, 0f);
         float ratio = _opponentCurrentHealth / _opponentMaxHealth;
         AnimateBar(ref _opponentHealthSequence, _opponentHealthFillImage, _opponentHealthTrailingFillImage, ratio);
+
+        if (_opponentCurrentHealth <= 0)
+        {
+            TriggerKO("PLAYER WINS", true);
+        }
     }
 
     /// <summary>
@@ -288,6 +356,22 @@ public class CombatHudController : MonoBehaviour
         AnimateBar(ref _opponentStaminaSequence, _opponentStaminaFillImage, _opponentStaminaTrailingFillImage, ratio);
     }
 
+    private void RegenPlayerStamina(float amount)
+    {
+        _playerCurrentStamina = Mathf.Min(_playerCurrentStamina + amount, _playerMaxStamina);
+        float ratio = _playerCurrentStamina / _playerMaxStamina;
+        SetFillImmediate(_playerStaminaFillImage, ratio);
+        SetFillImmediate(_playerStaminaTrailingFillImage, ratio);
+    }
+
+    private void RegenOpponentStamina(float amount)
+    {
+        _opponentCurrentStamina = Mathf.Min(_opponentCurrentStamina + amount, _opponentMaxStamina);
+        float ratio = _opponentCurrentStamina / _opponentMaxStamina;
+        SetFillImmediate(_opponentStaminaFillImage, ratio);
+        SetFillImmediate(_opponentStaminaTrailingFillImage, ratio);
+    }
+
     // ─────────────────────────────────────────────
     // Internal tweening
     // ─────────────────────────────────────────────
@@ -326,8 +410,6 @@ public class CombatHudController : MonoBehaviour
         }
     }
 
-<<<<<<< Updated upstream
-=======
     public void ActivateTimeFreezeTint(float duration)
     {
         if (_timeFreezeTintImage == null) return;
@@ -443,7 +525,6 @@ public class CombatHudController : MonoBehaviour
         SceneManager.LoadScene("idlee");
     }
 
->>>>>>> Stashed changes
     private void OnDestroy()
     {
         // Clean up all tweens when this object is destroyed
